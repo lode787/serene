@@ -399,34 +399,38 @@
         const logoImg = document.getElementById('logo-img');
         
         logoImg.addEventListener('click', function(e) {
-            const ripple = document.createElement('div');
-            ripple.classList.add('ripple');
+            // Add scatter animation
+            logoImg.style.animation = 'logoScatter 0.8s ease-out forwards';
             
-            const rect = logoImg.getBoundingClientRect();
-            const size = 50;
-            
-            ripple.style.width = size + 'px';
-            ripple.style.height = size + 'px';
-            ripple.style.left = (rect.left + rect.width / 2 - size / 2) + 'px';
-            ripple.style.top = (rect.top + rect.height / 2 - size / 2) + 'px';
-            
-            document.body.appendChild(ripple);
-            
-            setTimeout(() => ripple.remove(), 800);
-            
-            // Add a gentle scale animation to the logo
-            logoImg.style.animation = 'none';
+            // After animation, return to float animation
             setTimeout(() => {
-                logoImg.style.animation = 'logoClick 0.6s ease-out';
-            }, 10);
+                logoImg.style.animation = 'float 3s ease-in-out infinite';
+            }, 800);
         });
     </script>
 
     <style>
-        @keyframes logoClick {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
+        @keyframes logoScatter {
+            0% { 
+                transform: scale(1) rotate(0deg);
+                filter: drop-shadow(0 0 0px rgba(167, 139, 250, 0.5));
+            }
+            25% { 
+                transform: scale(1.05) rotate(-8deg);
+                filter: drop-shadow(10px 10px 15px rgba(167, 139, 250, 0.8));
+            }
+            50% { 
+                transform: scale(1.15) rotate(15deg);
+                filter: drop-shadow(-15px -10px 20px rgba(167, 139, 250, 0.6));
+            }
+            75% { 
+                transform: scale(1.05) rotate(-10deg);
+                filter: drop-shadow(12px -12px 15px rgba(167, 139, 250, 0.7));
+            }
+            100% { 
+                transform: scale(1) rotate(0deg);
+                filter: drop-shadow(0 0 0px rgba(167, 139, 250, 0.5));
+            }
         }
     </style>
 </body>
