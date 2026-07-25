@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Serene - A calm, private companion for your mental wellbeing">
+    <meta name="theme-color" content="#1a1a2e">
+    <title>Serene - Mental Wellbeing Companion</title>
+    <link rel="icon" type="image/x-icon" href="/icons/favicon.ico">
+    <link rel="apple-touch-icon" href="/assets/icon-7.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --bg-dark: #0f172a;
+            --bg-darker: #020617;
+            --glass-light: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --accent: #ec4899;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-darker) 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        header {
+            padding: 20px 0;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.4);
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        /* Hero Section */
+        .hero {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            align-items: center;
+            gap: 60px;
+            padding: 100px 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .hero-content h1 {
+            font-size: clamp(2.5rem, 8vw, 4rem);
+            line-height: 1.1;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-content p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            line-height: 1.8;
+            max-width: 500px;
+        }
+
+        .hero-logo {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .hero-logo img {
+            max-width: 100%;
+            height: auto;
+            filter: drop-shadow(0 0 30px rgba(99, 102, 241, 0.3));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        /* Buttons */
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 14px 32px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--glass-light);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--primary);
+        }
+
+        .btn-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--glass-light);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            font-size: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-icon:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+            transform: translateY(-4px);
+        }
+
+        /* Features Section */
+        .features {
+            padding: 100px 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+        }
+
+        .feature-card {
+            background: var(--glass-light);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 40px 30px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--primary);
+            transform: translateY(-8px);
+        }
+
+        .feature-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: var(--text-primary);
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--glass-border);
+            padding: 40px 0;
+            text-align: center;
+            color: var(--text-secondary);
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(10px);
+            margin-top: 100px;
+        }
+
+        footer p {
+            margin: 10px 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero {
+                grid-template-columns: 1fr;
+                padding: 60px 0;
+                min-height: auto;
+            }
+
+            .hero-logo {
+                order: -1;
+            }
+
+            .nav-links {
+                gap: 15px;
+                font-size: 0.9rem;
+            }
+
+            .button-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .hero-content h1 {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">Serene</div>
+                <ul class="nav-links">
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#download">Download</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;">
+                <div class="hero-content">
+                    <h1>Your Private Companion for Mental Wellbeing</h1>
+                    <p>A calm, gentle mirror to understand yourself better. Track your mood and habits—nothing leaves your computer.</p>
+                    
+                    <div class="button-group">
+                        <a href="https://github.com/lode787/serene/releases/download/1.1.13/Serene-1.1.13.zip" class="btn btn-primary" id="download">
+                            <span>📥</span> Download Serene v1.1.13
+                        </a>
+                        <a href="https://discord.gg/S7pPBy7eR" class="btn btn-secondary" target="_blank" rel="noopener">
+                            <span>💬</span> Join Discord
+                        </a>
+                    </div>
+                </div>
+
+                <div class="hero-logo">
+                    <img src="/assets/icon-7.png" alt="Serene Logo" loading="lazy">
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="features">
+            <div class="container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; width: 100%;">
+                <div class="feature-card">
+                    <h3>🧘 Mood Tracking</h3>
+                    <p>Track your mood and mental state on a soft 0-10 scale. Understand your emotional patterns over time.</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>🎯 Habit Building</h3>
+                    <p>Build your own set of positive and negative habits. Track what helps you thrive and what holds you back.</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>📊 Insights & Patterns</h3>
+                    <p>Smooth graphs reveal how your mood and habits move together. Get built-in analysis to spot patterns you might miss.</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>🔒 100% Private</h3>
+                    <p>Nothing is shared. Nothing leaves your computer. Your data lives only on your device.</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>📱 Monthly Overview</h3>
+                    <p>See your full rhythm across weeks with daily summaries. Celebrate good streaks and be kind to harder days.</p>
+                </div>
+
+                <div class="feature-card">
+                    <h3>⚙️ Customizable</h3>
+                    <p>Lock the app with a gesture or password. Export backups anytime or import to move between machines.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Serene. All rights reserved.</p>
+            <p>Made with 💜 for your mental wellbeing.</p>
+        </div>
+    </footer>
+</body>
+</html>
