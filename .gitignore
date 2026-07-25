@@ -1,7 +1,5 @@
 .idea/
-Serene-Windows-1.1.5/
 *.exe
 *.dll
-*.pak
 *.bin
 *.dat
