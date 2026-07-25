@@ -320,70 +320,70 @@
                 grid-template-columns: 1fr;
                 padding: 40px 0;
                 min-height: auto;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .hero .container {
+                display: flex !important;
+                flex-direction: column;
+                gap: 30px !important;
             }
 
             .hero-logo {
                 order: -1;
-                margin-bottom: 30px;
+                margin-bottom: 0;
             }
 
             .hero-logo img {
-                max-width: 280px;
+                max-width: 240px;
+                width: 100%;
+                margin: 0 auto;
+            }
+
+            .hero-content {
+                text-align: center;
             }
 
             .hero-content h1 {
-                font-size: 2rem;
-                margin-bottom: 20px;
+                font-size: 1.75rem;
+                margin-bottom: 16px;
             }
 
             .hero-content p {
-                font-size: 1rem;
+                font-size: 0.95rem;
                 margin-bottom: 20px;
+                max-width: 100%;
             }
 
             .button-group {
                 flex-direction: column;
-                gap: 12px;
-                margin-bottom: 30px;
+                gap: 10px;
+                margin-bottom: 20px;
+                justify-content: center;
             }
 
             .btn {
                 width: 100%;
                 justify-content: center;
-                padding: 12px 24px;
-                font-size: 0.95rem;
-            }
-
-            .btn-icon {
-                width: 44px;
-                height: 44px;
-                font-size: 20px;
+                padding: 12px 20px;
             }
 
             .features {
-                padding: 50px 0;
+                padding: 40px 0;
             }
 
             .feature-card {
-                padding: 24px 20px;
+                padding: 24px 16px;
             }
 
             .feature-card h3 {
                 font-size: 1.1rem;
-                margin-bottom: 12px;
-            }
-
-            .feature-card p {
-                font-size: 0.95rem;
             }
 
             footer {
-                padding: 30px 0;
-                margin-top: 50px;
-            }
-
-            footer p {
-                font-size: 0.9rem;
+                padding: 24px 0;
+                margin-top: 40px;
             }
         }
 
