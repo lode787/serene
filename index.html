@@ -530,6 +530,69 @@
             </div>
         </section>
 
+        <section id="showcase" class="features">
+            <div class="container" style="padding:60px 20px;">
+                <div style="text-align:center; margin-bottom:18px;">
+                    <h3 style="margin:0;">📷 App Screenshots</h3>
+                    <p style="color:var(--text-secondary); margin-top:8px;">Three separate monitor-like screens showcasing the app — each with a bezel and stand.</p>
+                </div>
+
+                <div class="monitor-row" style="display:flex; justify-content:center; gap:28px; align-items:center;">
+                    <!-- Left monitor -->
+                    <div class="monitor" style="width:28%; max-width:320px; min-width:220px;">
+                        <div class="monitor-frame" style="border-radius:14px; padding:14px; background:linear-gradient(180deg, rgba(10,12,18,0.85), rgba(18,20,28,0.95)); box-shadow: 0 18px 40px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.03);">
+                            <div style="border-radius:6px; overflow:hidden; background:#000;">
+                                <img src="/assets/screenshot-monthly.png" alt="Monthly overview" loading="lazy" style="display:block; width:100%; height:auto; border-radius:4px; cursor:pointer;" data-full="/assets/screenshot-monthly.png">
+                            </div>
+                        </div>
+                        <div class="monitor-stand" style="height:14px; margin-top:12px; display:flex; justify-content:center;">
+                            <div style="width:60px; height:6px; background:rgba(0,0,0,0.6); border-radius:4px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Center monitor (largest) -->
+                    <div class="monitor" style="width:36%; max-width:520px; min-width:300px;">
+                        <div class="monitor-frame" style="border-radius:16px; padding:16px; background:linear-gradient(180deg, rgba(10,12,18,0.85), rgba(18,20,28,0.95)); box-shadow: 0 26px 60px rgba(2,6,23,0.65); border:1px solid rgba(255,255,255,0.04);">
+                            <div style="border-radius:6px; overflow:hidden; background:#000;">
+                                <img src="/assets/screenshot-graphs.png" alt="Graphs" loading="lazy" style="display:block; width:100%; height:auto; border-radius:4px; cursor:pointer;" data-full="/assets/screenshot-graphs.png">
+                            </div>
+                        </div>
+                        <div class="monitor-stand" style="height:16px; margin-top:12px; display:flex; justify-content:center;">
+                            <div style="width:100px; height:8px; background:rgba(0,0,0,0.6); border-radius:5px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Right monitor -->
+                    <div class="monitor" style="width:28%; max-width:320px; min-width:220px;">
+                        <div class="monitor-frame" style="border-radius:14px; padding:14px; background:linear-gradient(180deg, rgba(10,12,18,0.85), rgba(18,20,28,0.95)); box-shadow: 0 18px 40px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.03);">
+                            <div style="border-radius:6px; overflow:hidden; background:#000;">
+                                <img src="/assets/screenshot-ambient.png" alt="Ambient" loading="lazy" style="display:block; width:100%; height:auto; border-radius:4px; cursor:pointer;" data-full="/assets/screenshot-ambient.png">
+                            </div>
+                        </div>
+                        <div class="monitor-stand" style="height:14px; margin-top:12px; display:flex; justify-content:center;">
+                            <div style="width:60px; height:6px; background:rgba(0,0,0,0.6); border-radius:4px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <style>
+                    /* Monitors layout and responsiveness */
+                    @media (max-width: 1100px) {
+                        .monitor-row { gap:18px; }
+                        .monitor { width:32% !important; }
+                    }
+                    @media (max-width: 820px) {
+                        .monitor-row { flex-direction: column; align-items:center; gap:20px; }
+                        .monitor { width:88% !important; max-width:720px !important; transform: none !important; }
+                        .monitor-stand > div { margin: 0 auto; }
+                    }
+
+                    .monitor-frame { transition: transform 260ms ease; }
+                    .monitor-frame:hover { transform: translateY(-8px); }
+                </style>
+            </div>
+        </section>
+
         <section id="features" class="features">
             <div class="container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; width: 100%;">
                 <div class="feature-card">
@@ -564,74 +627,12 @@
             </div>
         </section>
 
-        <section id="showcase" class="features">
-            <div class="container" style="padding:60px 20px;">
-                <div style="text-align:center; margin-bottom:18px;">
-                    <h3 style="margin:0;">📷 App Screenshots</h3>
-                    <p style="color:var(--text-secondary); margin-top:8px;">Three separate monitor-like screens showcasing the app — each with a bezel and stand.</p>
-                </div>
-
-                <div class="monitor-row" style="display:flex; justify-content:center; gap:28px; align-items:flex-end;">
-                    <!-- Left monitor -->
-                    <div class="monitor" style="width:28%; max-width:320px; min-width:220px;">
-                        <div class="monitor-frame" style="border-radius:14px; padding:14px; background:linear-gradient(180deg, rgba(10,12,18,0.85), rgba(18,20,28,0.95)); box-shadow: 0 18px 40px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.03);">
-                            <div style="border-radius:6px; overflow:hidden; background:#000;">
-                                <img src="/assets/screenshot-monthly.png" alt="Monthly overview" loading="lazy" style="display:block; width:100%; height:auto; border-radius:4px;">
-                            </div>
-                        </div>
-                        <div class="monitor-stand" style="height:14px; margin-top:12px; display:flex; justify-content:center;">
-                            <div style="width:60px; height:6px; background:rgba(0,0,0,0.6); border-radius:4px;"></div>
-                        </div>
-                    </div>
-
-                    <!-- Center monitor (largest) -->
-                    <div class="monitor" style="width:36%; max-width:520px; min-width:300px;">
-                        <div class="monitor-frame" style="border-radius:16px; padding:16px; background:linear-gradient(180deg, rgba(10,12,18,0.85), rgba(18,20,28,0.95)); box-shadow: 0 26px 60px rgba(2,6,23,0.65); border:1px solid rgba(255,255,255,0.04);">
-                            <div style="border-radius:6px; overflow:hidden; background:#000;">
-                                <img src="/assets/screenshot-graphs.png" alt="Graphs" loading="lazy" style="display:block; width:100%; height:auto; border-radius:4px;">
-                            </div>
-                        </div>
-                        <div class="monitor-stand" style="height:16px; margin-top:12px; display:flex; justify-content:center;">
-                            <div style="width:100px; height:8px; background:rgba(0,0,0,0.6); border-radius:5px;"></div>
-                        </div>
-                    </div>
-
-                    <!-- Right monitor -->
-                    <div class="monitor" style="width:28%; max-width:320px; min-width:220px;">
-                        <div class="monitor-frame" style="border-radius:14px; padding:14px; background:linear-gradient(180deg, rgba(10,12,18,0.85), rgba(18,20,28,0.95)); box-shadow: 0 18px 40px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.03);">
-                            <div style="border-radius:6px; overflow:hidden; background:#000;">
-                                <img src="/assets/screenshot-ambient.png" alt="Ambient" loading="lazy" style="display:block; width:100%; height:auto; border-radius:4px;">
-                            </div>
-                        </div>
-                        <div class="monitor-stand" style="height:14px; margin-top:12px; display:flex; justify-content:center;">
-                            <div style="width:60px; height:6px; background:rgba(0,0,0,0.6); border-radius:4px;"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <style>
-                    /* Monitors layout and responsiveness */
-                    @media (max-width: 1100px) {
-                        .monitor-row { gap:18px; }
-                        .monitor { width:32% !important; }
-                    }
-                    @media (max-width: 820px) {
-                        .monitor-row { flex-direction: column; align-items:center; gap:20px; }
-                        .monitor { width:88% !important; max-width:720px !important; transform: none !important; }
-                        .monitor-stand > div { margin: 0 auto; }
-                    }
-
-                    .monitor-frame { transition: transform 260ms ease; }
-                    .monitor-frame:hover { transform: translateY(-8px); }
-                </style>
-            </div>
-        </section>
     </main>
 
     <footer>
         <div class="container">
             <p>&copy; 2026 Serene. All rights reserved.</p>
-            <p>Made with 💜 for your mental wellbeing.</p>
+            <p>Made with 🩵 for your mental wellbeing.</p>
         </div>
     </footer>
 
@@ -673,5 +674,48 @@
             }
         }
     </style>
+
+    <!-- Lightbox / Fullscreen modal -->
+    <div id="lightbox" style="position:fixed; inset:0; display:none; align-items:center; justify-content:center; background: rgba(0,0,0,0.92); z-index: 9999;">
+        <img id="lightbox-img" src="" alt="Screenshot preview" style="max-width:95%; max-height:95%; border-radius:6px; box-shadow:0 30px 60px rgba(0,0,0,0.6);">
+    </div>
+
+    <script>
+        // Make monitor images open in a fullscreen/lightbox view
+        document.querySelectorAll('.monitor-frame img').forEach(img => {
+            img.addEventListener('click', (e) => {
+                const lb = document.getElementById('lightbox');
+                const lbImg = document.getElementById('lightbox-img');
+                lbImg.src = img.dataset.full || img.src;
+                lb.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+                // Try to enter fullscreen if available
+                if (lb.requestFullscreen) {
+                    lb.requestFullscreen().catch(() => {});
+                } else if (lb.webkitRequestFullscreen) { lb.webkitRequestFullscreen(); }
+            });
+        });
+
+        const lightbox = document.getElementById('lightbox');
+        lightbox.addEventListener('click', (e) => {
+            // Close when clicking outside the image
+            if (e.target && e.target.id === 'lightbox-img') return;
+            lightbox.style.display = 'none';
+            document.body.style.overflow = '';
+            if (document.fullscreenElement) {
+                document.exitFullscreen().catch(() => {});
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                lightbox.style.display = 'none';
+                document.body.style.overflow = '';
+                if (document.fullscreenElement) {
+                    document.exitFullscreen().catch(() => {});
+                }
+            }
+        });
+    </script>
 </body>
 </html>
