@@ -565,16 +565,40 @@
         </section>
 
         <section id="showcase" class="features">
-            <div class="container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; align-items: center;">
-                <div class="feature-card" style="padding:20px; grid-column: 1 / -1;">
-                    <h3>📷 App Screenshots</h3>
-                    <p style="color:var(--text-secondary); margin-bottom:12px;">A quick look at the monthly overview, insights graphs, and ambient lock screen.</p>
-                    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:12px;">
-                        <img src="/assets/screenshot-monthly.png" alt="Monthly overview" style="width:100%; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.4);" loading="lazy">
-                        <img src="/assets/screenshot-graphs.png" alt="Graphs" style="width:100%; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.4);" loading="lazy">
-                        <img src="/assets/screenshot-ambient.png" alt="Ambient" style="width:100%; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.4);" loading="lazy">
+            <div class="container" style="padding:60px 20px;">
+                <div style="text-align:center; margin-bottom:18px;">
+                    <h3 style="margin:0;">📷 App Screenshots</h3>
+                    <p style="color:var(--text-secondary); margin-top:8px;">Monthly overview, insights, and ambient lock — arranged as overlapping panes.</p>
+                </div>
+
+                <div class="showcase-frames" style="display:flex; justify-content:center; gap:24px; align-items:flex-end;">
+                    <div class="shot left" style="width:30%; max-width:360px; transform: rotate(-6deg);">
+                        <div style="border-radius:16px; overflow:hidden; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.04)); box-shadow: 0 20px 40px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.04);">
+                            <img src="/assets/screenshot-monthly.png" alt="Monthly overview" loading="lazy" style="display:block; width:100%; height:auto;">
+                        </div>
+                    </div>
+
+                    <div class="shot center" style="width:34%; max-width:460px; transform: rotate(0deg);">
+                        <div style="border-radius:18px; overflow:hidden; background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.05)); box-shadow: 0 30px 60px rgba(2,6,23,0.65); border:1px solid rgba(255,255,255,0.06);">
+                            <img src="/assets/screenshot-graphs.png" alt="Graphs" loading="lazy" style="display:block; width:100%; height:auto;">
+                        </div>
+                    </div>
+
+                    <div class="shot right" style="width:30%; max-width:360px; transform: rotate(6deg);">
+                        <div style="border-radius:16px; overflow:hidden; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.04)); box-shadow: 0 20px 40px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.04);">
+                            <img src="/assets/screenshot-ambient.png" alt="Ambient" loading="lazy" style="display:block; width:100%; height:auto;">
+                        </div>
                     </div>
                 </div>
+
+                <style>
+                    /* Minor polish to mimic imported layout */
+                    @media (max-width: 900px) {
+                        .showcase-frames { flex-direction: column; align-items: center; gap:16px; }
+                        .shot { width:88% !important; max-width:720px !important; transform: rotate(0deg) !important; }
+                    }
+                    .shot img { display:block; }
+                </style>
             </div>
         </section>
     </main>
