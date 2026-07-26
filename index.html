@@ -514,13 +514,26 @@
                     <h1>Your Private Companion for Mental Wellbeing</h1>
                     <p>A calm, gentle mirror to understand yourself better. Track your mood and habits without noise or pressure.</p>
                     
-                    <div class="button-group">
-                        <a href="https://github.com/lode787/serene/releases/download/new/Serene-Windows-v1.1.13.zip" class="btn btn-primary">
-                            <span>📥</span> Download Serene v1.1.13 (<span id="download-count">0</span>)
+                    <div class="button-group" style="display: flex; gap: 12px; width: 100%;">
+                        <a href="https://github.com/lode787/serene/releases/download/new/Serene-Windows-v1.1.13.zip" class="btn btn-primary" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Download Serene v1.1.13
                         </a>
-                        <a href="https://discord.gg/S7pPBy7eR" class="btn btn-secondary" target="_blank" rel="noopener">
-                            <span>💬</span> Join Discord
+                        <a href="https://discord.gg/S7pPBy7eR" class="btn btn-secondary" target="_blank" rel="noopener" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.211.375-.444.864-.607 1.25a18.27 18.27 0 0 0-5.487 0c-.163-.386-.395-.875-.607-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.873-1.295 1.226-1.994a.076.076 0 0 0-.042-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.294.075.075 0 0 1 .078-.01c3.928 1.793 8.18 1.793 12.062 0a.075.075 0 0 1 .079.009c.12.098.246.198.373.295a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.076.076 0 0 0-.041.107c.36.699.77 1.364 1.225 1.994a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-4.718-.838-8.812-3.549-12.46a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-.965-2.157-2.156 0-1.193.964-2.157 2.157-2.157 1.193 0 2.156.964 2.157 2.157 0 1.19-.964 2.156-2.157 2.156zm7.975 0c-1.183 0-2.157-.965-2.157-2.156 0-1.193.964-2.157 2.157-2.157 1.193 0 2.156.964 2.157 2.157 0 1.19-.964 2.156-2.157 2.156z"></path>
+                            </svg>
+                            Join Discord
                         </a>
+                    </div>
+
+                    <div style="margin-top: 40px; padding: 20px; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; text-align: center; width: 100%;">
+                        <p style="color: var(--text-secondary); margin: 0; font-size: 14px;">Downloads</p>
+                        <p style="color: var(--primary); font-size: 28px; font-weight: 600; margin: 8px 0 0 0;"><span id="download-count">0</span></p>
                     </div>
                 </div>
 
@@ -717,7 +730,7 @@
             }
         });
 
-        // Fetch GitHub download count
+        // Fetch GitHub download count with animation
         fetch('https://api.github.com/repos/lode787/serene/releases/tags/new')
             .then(res => res.json())
             .then(data => {
@@ -727,12 +740,61 @@
                         totalDownloads += asset.download_count;
                     });
                 }
-                document.getElementById('download-count').textContent = totalDownloads.toLocaleString();
+                
+                // Animate counter from 0 to final number
+                const counter = document.getElementById('download-count');
+                const finalNumber = totalDownloads;
+                const duration = 1500; // 1.5 seconds
+                const startTime = Date.now();
+                
+                function animate() {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const current = Math.floor(progress * finalNumber);
+                    counter.textContent = current.toLocaleString();
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    }
+                }
+                animate();
             })
             .catch(err => {
-                // Silently fail if API unavailable
                 console.log('Download count unavailable');
             });
+
+        // Cursor glow effect
+        const cursorGlow = document.createElement('div');
+        cursorGlow.style.cssText = `
+            position: fixed;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, rgba(99, 102, 241, 0.1) 50%, transparent 70%);
+            pointer-events: none;
+            z-index: 1;
+            filter: blur(40px);
+            box-shadow: 0 0 80px rgba(99, 102, 241, 0.3);
+            transform: translate(-50%, -50%);
+            mix-blend-mode: screen;
+        `;
+        document.body.appendChild(cursorGlow);
+
+        document.addEventListener('mousemove', (e) => {
+            cursorGlow.style.left = e.clientX + 'px';
+            cursorGlow.style.top = e.clientY + 'px';
+        });
+
+        // Hide glow when mouse leaves window
+        document.addEventListener('mouseleave', () => {
+            cursorGlow.style.opacity = '0';
+            cursorGlow.style.transition = 'opacity 0.3s ease';
+        });
+
+        document.addEventListener('mouseenter', () => {
+            cursorGlow.style.opacity = '1';
+            cursorGlow.style.transition = 'opacity 0.3s ease';
+        });
     </script>
 </body>
 </html>
