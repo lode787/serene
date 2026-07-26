@@ -568,44 +568,61 @@
             <div class="container" style="padding:60px 20px;">
                 <div style="text-align:center; margin-bottom:18px;">
                     <h3 style="margin:0;">📷 App Screenshots</h3>
-                    <p style="color:var(--text-secondary); margin-top:8px;">Monthly overview, insights, and ambient lock — displayed inside a single rounded device-like screen.</p>
+                    <p style="color:var(--text-secondary); margin-top:8px;">Three separate monitor-like screens showcasing the app — each with a bezel and stand.</p>
                 </div>
 
-                <!-- Unified rounded screen container -->
-                <div class="showcase-screen" style="display:flex; justify-content:center;">
-                    <div style="width:100%; max-width:980px; border-radius:28px; overflow:hidden; padding:28px; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.03)); box-shadow: 0 40px 80px rgba(2,6,23,0.65); border:1px solid rgba(255,255,255,0.04);">
-                        <div class="showcase-frames" style="display:flex; justify-content:center; gap:18px; align-items:flex-end;">
-                            <div class="shot left" style="width:30%; max-width:320px; transform: rotate(-6deg);">
-                                <div style="border-radius:6px; overflow:hidden; background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.02)); box-shadow: 0 20px 40px rgba(2,6,23,0.45); border:1px solid rgba(255,255,255,0.02);">
-                                    <img src="/assets/screenshot-monthly.png" alt="Monthly overview" loading="lazy" style="display:block; width:100%; height:auto; border-radius:6px;">
-                                </div>
+                <div class="monitor-row" style="display:flex; justify-content:center; gap:28px; align-items:flex-end;">
+                    <!-- Left monitor -->
+                    <div class="monitor" style="width:28%; max-width:320px; min-width:220px;">
+                        <div class="monitor-frame" style="border-radius:14px; padding:14px; background:linear-gradient(180deg, rgba(10,12,18,0.85), rgba(18,20,28,0.95)); box-shadow: 0 18px 40px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.03);">
+                            <div style="border-radius:6px; overflow:hidden; background:#000;">
+                                <img src="/assets/screenshot-monthly.png" alt="Monthly overview" loading="lazy" style="display:block; width:100%; height:auto; border-radius:4px;">
                             </div>
+                        </div>
+                        <div class="monitor-stand" style="height:14px; margin-top:12px; display:flex; justify-content:center;">
+                            <div style="width:60px; height:6px; background:rgba(0,0,0,0.6); border-radius:4px;"></div>
+                        </div>
+                    </div>
 
-                            <div class="shot center" style="width:38%; max-width:520px; transform: rotate(0deg);">
-                                <div style="border-radius:6px; overflow:hidden; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.03)); box-shadow: 0 30px 60px rgba(2,6,23,0.5); border:1px solid rgba(255,255,255,0.03);">
-                                    <img src="/assets/screenshot-graphs.png" alt="Graphs" loading="lazy" style="display:block; width:100%; height:auto; border-radius:6px;">
-                                </div>
+                    <!-- Center monitor (largest) -->
+                    <div class="monitor" style="width:36%; max-width:520px; min-width:300px;">
+                        <div class="monitor-frame" style="border-radius:16px; padding:16px; background:linear-gradient(180deg, rgba(10,12,18,0.85), rgba(18,20,28,0.95)); box-shadow: 0 26px 60px rgba(2,6,23,0.65); border:1px solid rgba(255,255,255,0.04);">
+                            <div style="border-radius:6px; overflow:hidden; background:#000;">
+                                <img src="/assets/screenshot-graphs.png" alt="Graphs" loading="lazy" style="display:block; width:100%; height:auto; border-radius:4px;">
                             </div>
+                        </div>
+                        <div class="monitor-stand" style="height:16px; margin-top:12px; display:flex; justify-content:center;">
+                            <div style="width:100px; height:8px; background:rgba(0,0,0,0.6); border-radius:5px;"></div>
+                        </div>
+                    </div>
 
-                            <div class="shot right" style="width:30%; max-width:320px; transform: rotate(6deg);">
-                                <div style="border-radius:6px; overflow:hidden; background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.02)); box-shadow: 0 20px 40px rgba(2,6,23,0.45); border:1px solid rgba(255,255,255,0.02);">
-                                    <img src="/assets/screenshot-ambient.png" alt="Ambient" loading="lazy" style="display:block; width:100%; height:auto; border-radius:6px;">
-                                </div>
+                    <!-- Right monitor -->
+                    <div class="monitor" style="width:28%; max-width:320px; min-width:220px;">
+                        <div class="monitor-frame" style="border-radius:14px; padding:14px; background:linear-gradient(180deg, rgba(10,12,18,0.85), rgba(18,20,28,0.95)); box-shadow: 0 18px 40px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.03);">
+                            <div style="border-radius:6px; overflow:hidden; background:#000;">
+                                <img src="/assets/screenshot-ambient.png" alt="Ambient" loading="lazy" style="display:block; width:100%; height:auto; border-radius:4px;">
                             </div>
+                        </div>
+                        <div class="monitor-stand" style="height:14px; margin-top:12px; display:flex; justify-content:center;">
+                            <div style="width:60px; height:6px; background:rgba(0,0,0,0.6); border-radius:4px;"></div>
                         </div>
                     </div>
                 </div>
 
                 <style>
-                    /* Screen wrapper responsiveness and image corner sharpening */
-                    @media (max-width: 900px) {
-                        .showcase-screen > div { padding:18px; }
-                        .showcase-frames { flex-direction: column; align-items: center; gap:14px; }
-                        .shot { width:92% !important; max-width:720px !important; transform: rotate(0deg) !important; }
-                        .shot img { border-radius:6px !important; }
+                    /* Monitors layout and responsiveness */
+                    @media (max-width: 1100px) {
+                        .monitor-row { gap:18px; }
+                        .monitor { width:32% !important; }
+                    }
+                    @media (max-width: 820px) {
+                        .monitor-row { flex-direction: column; align-items:center; gap:20px; }
+                        .monitor { width:88% !important; max-width:720px !important; transform: none !important; }
+                        .monitor-stand > div { margin: 0 auto; }
                     }
 
-                    .shot img { display:block; border-radius:6px; }
+                    .monitor-frame { transition: transform 260ms ease; }
+                    .monitor-frame:hover { transform: translateY(-8px); }
                 </style>
             </div>
         </section>
