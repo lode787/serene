@@ -568,36 +568,44 @@
             <div class="container" style="padding:60px 20px;">
                 <div style="text-align:center; margin-bottom:18px;">
                     <h3 style="margin:0;">📷 App Screenshots</h3>
-                    <p style="color:var(--text-secondary); margin-top:8px;">Monthly overview, insights, and ambient lock — arranged as overlapping panes.</p>
+                    <p style="color:var(--text-secondary); margin-top:8px;">Monthly overview, insights, and ambient lock — displayed inside a single rounded device-like screen.</p>
                 </div>
 
-                <div class="showcase-frames" style="display:flex; justify-content:center; gap:24px; align-items:flex-end;">
-                    <div class="shot left" style="width:30%; max-width:360px; transform: rotate(-6deg);">
-                        <div style="border-radius:16px; overflow:hidden; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.04)); box-shadow: 0 20px 40px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.04);">
-                            <img src="/assets/screenshot-monthly.png" alt="Monthly overview" loading="lazy" style="display:block; width:100%; height:auto;">
-                        </div>
-                    </div>
+                <!-- Unified rounded screen container -->
+                <div class="showcase-screen" style="display:flex; justify-content:center;">
+                    <div style="width:100%; max-width:980px; border-radius:28px; overflow:hidden; padding:28px; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.03)); box-shadow: 0 40px 80px rgba(2,6,23,0.65); border:1px solid rgba(255,255,255,0.04);">
+                        <div class="showcase-frames" style="display:flex; justify-content:center; gap:18px; align-items:flex-end;">
+                            <div class="shot left" style="width:30%; max-width:320px; transform: rotate(-6deg);">
+                                <div style="border-radius:6px; overflow:hidden; background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.02)); box-shadow: 0 20px 40px rgba(2,6,23,0.45); border:1px solid rgba(255,255,255,0.02);">
+                                    <img src="/assets/screenshot-monthly.png" alt="Monthly overview" loading="lazy" style="display:block; width:100%; height:auto; border-radius:6px;">
+                                </div>
+                            </div>
 
-                    <div class="shot center" style="width:34%; max-width:460px; transform: rotate(0deg);">
-                        <div style="border-radius:18px; overflow:hidden; background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.05)); box-shadow: 0 30px 60px rgba(2,6,23,0.65); border:1px solid rgba(255,255,255,0.06);">
-                            <img src="/assets/screenshot-graphs.png" alt="Graphs" loading="lazy" style="display:block; width:100%; height:auto;">
-                        </div>
-                    </div>
+                            <div class="shot center" style="width:38%; max-width:520px; transform: rotate(0deg);">
+                                <div style="border-radius:6px; overflow:hidden; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.03)); box-shadow: 0 30px 60px rgba(2,6,23,0.5); border:1px solid rgba(255,255,255,0.03);">
+                                    <img src="/assets/screenshot-graphs.png" alt="Graphs" loading="lazy" style="display:block; width:100%; height:auto; border-radius:6px;">
+                                </div>
+                            </div>
 
-                    <div class="shot right" style="width:30%; max-width:360px; transform: rotate(6deg);">
-                        <div style="border-radius:16px; overflow:hidden; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.04)); box-shadow: 0 20px 40px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.04);">
-                            <img src="/assets/screenshot-ambient.png" alt="Ambient" loading="lazy" style="display:block; width:100%; height:auto;">
+                            <div class="shot right" style="width:30%; max-width:320px; transform: rotate(6deg);">
+                                <div style="border-radius:6px; overflow:hidden; background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.02)); box-shadow: 0 20px 40px rgba(2,6,23,0.45); border:1px solid rgba(255,255,255,0.02);">
+                                    <img src="/assets/screenshot-ambient.png" alt="Ambient" loading="lazy" style="display:block; width:100%; height:auto; border-radius:6px;">
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <style>
-                    /* Minor polish to mimic imported layout */
+                    /* Screen wrapper responsiveness and image corner sharpening */
                     @media (max-width: 900px) {
-                        .showcase-frames { flex-direction: column; align-items: center; gap:16px; }
-                        .shot { width:88% !important; max-width:720px !important; transform: rotate(0deg) !important; }
+                        .showcase-screen > div { padding:18px; }
+                        .showcase-frames { flex-direction: column; align-items: center; gap:14px; }
+                        .shot { width:92% !important; max-width:720px !important; transform: rotate(0deg) !important; }
+                        .shot img { border-radius:6px !important; }
                     }
-                    .shot img { display:block; }
+
+                    .shot img { display:block; border-radius:6px; }
                 </style>
             </div>
         </section>
