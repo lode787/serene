@@ -63,6 +63,40 @@ function t(key, vars) {
   } catch (e) {}
   return key;
 }
+function habitLabel(h) {
+  if (!h) return '';
+  if (h.labelKey) return t(h.labelKey);
+  const all = [...PRESETS_POS, ...PRESETS_NEG];
+  const match = all.find(p => p.name === h.canonicalName || p.name === h.name || (h.labelKey && p.labelKey === h.labelKey));
+  if (match) return t(match.labelKey);
+  return h.name || '';
+}
+
+function syncPresetHabitNames() {
+  const all = [...PRESETS_POS, ...PRESETS_NEG];
+  let changed = false;
+  ['positive', 'negative'].forEach((k) => {
+    (state.habits[k] || []).forEach((h) => {
+      if (!h || !h.preset) return;
+      const match = all.find(p =>
+        p.labelKey === h.labelKey ||
+        p.name === h.canonicalName ||
+        p.name === h.name ||
+        (h.labelKey && p.labelKey === h.labelKey)
+      );
+      if (!match) return;
+      const nextName = t(match.labelKey);
+      if (h.labelKey !== match.labelKey || h.canonicalName !== match.name || h.name !== nextName) {
+        h.labelKey = match.labelKey;
+        h.canonicalName = match.name;
+        h.name = nextName;
+        changed = true;
+      }
+    });
+  });
+  if (changed) save(STORAGE.habits, state.habits);
+  return changed;
+}
 const fmtLongDate = (d) => d.toLocaleDateString(localeTag(), { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 const monthName = (d) => d.toLocaleDateString(localeTag(), { month: 'long', year: 'numeric' });
 
@@ -86,10 +120,12 @@ save(STORAGE.settings, state.settings);
 
 if (!state.habits) {
   state.habits = {
-    positive: PRESETS_POS.map(p => ({ id: uid(), name: p.name, enabled: true, preset: true })),
-    negative: PRESETS_NEG.map(p => ({ id: uid(), name: p.name, enabled: true, preset: true })),
+    positive: PRESETS_POS.map(p => ({ id: uid(), name: t(p.labelKey), canonicalName: p.name, labelKey: p.labelKey, enabled: true, preset: true })),
+    negative: PRESETS_NEG.map(p => ({ id: uid(), name: t(p.labelKey), canonicalName: p.name, labelKey: p.labelKey, enabled: true, preset: true })),
   };
   save(STORAGE.habits, state.habits);
+} else {
+  syncPresetHabitNames();
 }
 
 function load(key, def) {
@@ -161,7 +197,7 @@ function sidebar() {
     b.onclick = () => { state.view = v; state.detailKey = null; render(); };
     s.appendChild(b);
   });
-  const foot = el('div', 'sidebar-foot', 'Your data stays on this device.');
+  const foot = el('div', 'sidebar-foot', t('sidebar.foot'));
   s.appendChild(foot);
   return s;
 }
@@ -180,14 +216,14 @@ function viewToday() {
   const streak = computeStreak();
   if (streak > 0) {
     const sb = el('div', 'streak-badge', '');
-    sb.innerHTML = '<span class="flame">🔥</span><span class="streak-num">' + streak + '</span><span class="streak-lbl">day streak</span>';
-    sb.title = streak + '-day check-in streak';
+    sb.innerHTML = '<span class="flame">🔥</span><span class="streak-num">' + streak + '</span><span class="streak-lbl">' + t('today.dayStreak') + '</span>';
+    sb.title = streak + ' ' + t('today.dayStreak');
     head.appendChild(sb);
   }
   if (entry.submitted) {
     const badge = el('div', 'stat');
-    badge.appendChild(el('div', 'stat-label', 'Status'));
-    badge.appendChild(el('div', 'stat-val', 'Submitted ✓'));
+    badge.appendChild(el('div', 'stat-label', t('today.status')));
+    badge.appendChild(el('div', 'stat-val', t('today.submitted')));
     head.appendChild(badge);
   }
   const container = el('div');
@@ -216,7 +252,7 @@ function viewToday() {
 
   // meters + submit panel
   const right = el('section', 'glass');
-  right.appendChild(el('h3', 'panel-title', t('today.sub')));
+  right.appendChild(el('h3', 'panel-title', t('today.feeling')));
 
   const moodMeter = meter(t('today.mood'), entry.mood, (v) => { entry.mood = v; save(STORAGE.entries, state.entries); });
   right.appendChild(moodMeter);
@@ -252,25 +288,23 @@ function notesPanel(entry, opts) {
   const panel = el('section', 'glass notes-panel');
   const isEmpty = !entry.note || !entry.note.trim();
   const asking = opts.promptIfEmpty && isEmpty;
-  panel.appendChild(el('h3', 'panel-title', asking ? 'Would you like to add a note for today?' : 'Notes'));
-  panel.appendChild(el('div', 'panel-sub', asking
-    ? 'Capture a thought, a moment, a feeling — anything you want to remember about today.'
-    : 'Reflections for this day. Edit anytime.'));
+  panel.appendChild(el('h3', 'panel-title', asking ? t('today.notesAsk') : t('today.notesTitle')));
+  panel.appendChild(el('div', 'panel-sub', asking ? t('today.notesHintAsk') : t('today.notesHint')));
   const ta = document.createElement('textarea');
   ta.className = 'note-input';
-  ta.placeholder = asking ? 'Write freely…' : 'Add to your note…';
+  ta.placeholder = asking ? t('today.notesPlaceholderAsk') : t('today.notesPlaceholder');
   ta.value = entry.note || '';
   ta.rows = 6;
-  let t;
+  let debounce;
   ta.oninput = () => {
     entry.note = ta.value;
-    clearTimeout(t);
-    t = setTimeout(() => save(STORAGE.entries, state.entries), 250);
+    clearTimeout(debounce);
+    debounce = setTimeout(() => save(STORAGE.entries, state.entries), 250);
   };
   ta.onblur = () => { save(STORAGE.entries, state.entries); };
   panel.appendChild(ta);
   const foot = el('div', 'note-foot');
-  const hint = el('span', 'note-hint', 'Saved automatically');
+  const hint = el('span', 'note-hint', t('today.savedAuto'));
   foot.appendChild(hint);
   panel.appendChild(foot);
   return panel;
@@ -282,7 +316,7 @@ function habitRow(habit, entry, isNeg) {
     const row = el('div', 'habit-row' + (checked ? ' checked' : '') + (isNeg ? ' neg' : ''));
     const c = el('div', 'check', checked ? '✓' : '');
     row.appendChild(c);
-    row.appendChild(el('div', 'habit-name', habit.name));
+    row.appendChild(el('div', 'habit-name', habitLabel(habit)));
     if (habit.preset) row.appendChild(el('div', 'habit-badge', t('common.preset')));
     row.onclick = (e) => {
       e.preventDefault();
@@ -340,11 +374,11 @@ function viewMonth() {
 
 function calendarPanel(md) {
   const panel = el('section', 'glass');
-  panel.appendChild(el('h3', 'panel-title', 'Calendar'));
+  panel.appendChild(el('h3', 'panel-title', t('month.calendar')));
   const grid = el('div', 'cal-grid');
   // header row
   grid.appendChild(el('div', 'cal-week-label', ''));
-  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(d => grid.appendChild(el('div', 'cal-dow', d)));
+  [0,1,2,3,4,5,6].forEach(i => grid.appendChild(el('div', 'cal-dow', t('month.dow' + i))));
 
   const y = md.getFullYear(), m = md.getMonth();
   const firstDow = (new Date(y, m, 1).getDay() + 6) % 7; // Mon=0
@@ -356,7 +390,7 @@ function calendarPanel(md) {
   for (let i = 0; i < totalCells; i++) {
     if (i % 7 === 0) {
       weekIdx++;
-      grid.appendChild(el('div', 'cal-week-label', 'Week ' + weekIdx));
+      grid.appendChild(el('div', 'cal-week-label', t('month.week', { n: weekIdx })));
     }
     const dayNum = i - firstDow + 1;
     if (dayNum < 1 || dayNum > daysInMonth) {
@@ -379,7 +413,7 @@ function calendarPanel(md) {
   }
   panel.appendChild(grid);
   const legend = el('div', 'row wrap', ''); legend.style.marginTop = '14px'; legend.style.fontSize = '12px'; legend.style.color = 'var(--fg-mute)';
-  legend.append('Green tint = great day · Amber = mixed · Rose = tough day. Click any day for details.');
+  legend.append(t('month.legend'));
   panel.appendChild(legend);
   return panel;
 }
@@ -432,13 +466,13 @@ function analysisPanel(md) {
 
   const stats = el('div', 'stat-grid');
   stats.appendChild(statBox(t('month.loggedDays'), days.length, `${t('month.of')} ${daysInMonth}`));
-  stats.appendChild(statBox('Avg Mood', avgMood.toFixed(1), '/ 10'));
-  stats.appendChild(statBox('Avg Mental', avgMental.toFixed(1), '/ 10'));
-  stats.appendChild(statBox('Best Day', String(parseKey(best.date).getDate()), fmtLongDate(parseKey(best.date))));
+  stats.appendChild(statBox(t('month.avgMood'), avgMood.toFixed(1), '/ 10'));
+  stats.appendChild(statBox(t('month.avgMental'), avgMental.toFixed(1), '/ 10'));
+  stats.appendChild(statBox(t('month.bestDay'), String(parseKey(best.date).getDate()), fmtLongDate(parseKey(best.date))));
   panel.appendChild(stats);
 
   // Smooth line charts
-  panel.appendChild(el('div', 'panel-title', 'Mood & Mental State'));
+  panel.appendChild(el('div', 'panel-title', t('month.moodMental')));
   panel.appendChild(lineChart(y, m, daysInMonth, [
     { key: 'mood', label: 'Mood', color: 'var(--accent)' },
     { key: 'mental', label: 'Mental', color: 'var(--accent-2)' },
@@ -446,7 +480,7 @@ function analysisPanel(md) {
 
 
   // Habit completion rates
-  panel.appendChild(el('div', 'panel-title', 'Habit Completion'));
+  panel.appendChild(el('div', 'panel-title', t('month.habitCompletion')));
   const allHabits = [
     ...state.habits.positive.map(h => ({ ...h, kind: 'pos' })),
     ...state.habits.negative.map(h => ({ ...h, kind: 'neg' })),
@@ -456,7 +490,7 @@ function analysisPanel(md) {
     const rate = days.length ? done / days.length : 0;
     const row = el('div', 'hrate-row');
     const top = el('div', 'hrate-top');
-    top.appendChild(el('span', '', h.name + (h.kind === 'neg' ? '  (neg)' : '')));
+    top.appendChild(el('span', '', habitLabel(h) + (h.kind === 'neg' ? '  ' + t('month.negTag') : '')));
     top.appendChild(el('span', '', Math.round(rate * 100) + '%  ·  ' + done + '/' + days.length));
     row.appendChild(top);
     const bar = el('div', 'bar' + (h.kind === 'neg' ? ' neg' : ''));
@@ -466,7 +500,7 @@ function analysisPanel(md) {
   });
 
   // Insights
-  panel.appendChild(el('div', 'panel-title', 'Insights'));
+  panel.appendChild(el('div', 'panel-title', t('month.insights')));
   const insights = deriveInsights(days, allHabits, avgMood, avgMental, best, worst);
   insights.forEach(i => {
     const box = el('div', 'insight ' + i.tone);
@@ -645,7 +679,7 @@ function deriveInsights(days, habits, avgMood, avgMental, best, worst) {
         const positive = (h.kind === 'pos' && diff > 0) || (h.kind === 'neg' && diff < 0);
         out.push({
           tone: positive ? 'good' : 'warn',
-          html: `On days you ${h.kind === 'neg' ? 'did' : 'did'} <b>${escape(h.name)}</b>, your combined mood+mental was ${diff > 0 ? 'higher' : 'lower'} by <b>${Math.abs(diff).toFixed(1)} pts</b>.`
+          html: `On days you ${h.kind === 'neg' ? 'did' : 'did'} <b>${escape(habitLabel(h))}</b>, your combined mood+mental was ${diff > 0 ? 'higher' : 'lower'} by <b>${Math.abs(diff).toFixed(1)} pts</b>.`
         });
       }
     }
@@ -694,18 +728,18 @@ function dayDetailModal(key) {
   stats.appendChild(statBox('Negative done', s.negDone, `of ${state.habits.negative.length}`));
   modal.appendChild(stats);
 
-  modal.appendChild(el('div', 'panel-title', 'Positive habits'));
+  modal.appendChild(el('div', 'panel-title', t('habits.positive')));
   state.habits.positive.forEach(h => {
     const row = el('div', 'habit-row' + (entry.checked[h.id] ? ' checked' : ''));
     row.appendChild(el('div', 'check', entry.checked[h.id] ? '✓' : ''));
-    row.appendChild(el('div', 'habit-name', h.name));
+    row.appendChild(el('div', 'habit-name', habitLabel(h)));
     modal.appendChild(row);
   });
-  modal.appendChild(el('div', 'panel-title', 'Negative habits'));
+  modal.appendChild(el('div', 'panel-title', t('habits.negative')));
   state.habits.negative.forEach(h => {
     const row = el('div', 'habit-row neg' + (entry.checked[h.id] ? ' checked' : ''));
     row.appendChild(el('div', 'check', entry.checked[h.id] ? '✓' : ''));
-    row.appendChild(el('div', 'habit-name', h.name));
+    row.appendChild(el('div', 'habit-name', habitLabel(h)));
     modal.appendChild(row);
   });
 
@@ -887,7 +921,7 @@ function viewGraphs() {
     } else {
       const series = all.map(({ h, neg, i }) => ({
         key: 'h_' + h.id,
-        label: h.name,
+        label: habitLabel(h),
         color: habitPalette(i, neg),
         compute: (e) => (e.checked && e.checked[h.id]) ? 100 : 0,
         tipFmt: pct,
@@ -933,54 +967,30 @@ function viewAbout() {
   wrap.appendChild(head);
 
   const panel = el('section', 'glass about-panel');
-  panel.appendChild(el('h3', 'panel-title', 'What Serene is for'));
+  panel.appendChild(el('h3', 'panel-title', t('about.whatFor')));
 
-  const intro = el('p', 'about-p',
-    'Serene is a calm, private companion for your mental wellbeing. It helps you notice how you feel and how you live, one day at a time, without noise or pressure.'
-  );
-  panel.appendChild(intro);
-
-  const p2 = el('p', 'about-p',
-    'Every day you check in with a short mood and mental state rating, tick off the habits you kept, and mark the ones that slipped. Nothing is shared, nothing leaves your computer. Your entries live only on this device.'
-  );
-  panel.appendChild(p2);
-
-  const p3 = el('p', 'about-p',
-    'Over time Serene turns those small check ins into something meaningful. The Monthly Overview shows your rhythm across the weeks, the Graphs section reveals how your mood and habits move together, and the built in analysis points out patterns that are easy to miss in the moment.'
-  );
-  panel.appendChild(p3);
-
-  const p4 = el('p', 'about-p',
-    'The goal is simple. Give you a gentle mirror so you can understand yourself a little better, celebrate the good streaks, and be kinder to the harder days.'
-  );
-  panel.appendChild(p4);
+  panel.appendChild(el('p', 'about-p', t('about.p1')));
+  panel.appendChild(el('p', 'about-p', t('about.p2')));
+  panel.appendChild(el('p', 'about-p', t('about.p3')));
+  panel.appendChild(el('p', 'about-p', t('about.p4')));
 
   const list = el('ul', 'about-list');
-  [
-    'Track mood and mental state on a soft 0 to 10 scale.',
-    'Build your own set of positive and negative habits.',
-    'See a full monthly calendar with a summary for every day.',
-    'Explore smooth graphs for mood, good habits and bad habits.',
-    'Get optional reminders so checking in becomes a habit itself.',
-    'Lock the app behind a slide gesture or password when you step away.',
-    'Export a backup any time, or import one to move between machines.',
-  ].forEach(t => {
-    const li = el('li', '', t);
-    list.appendChild(li);
+  ['about.li1','about.li2','about.li3','about.li4','about.li5','about.li6','about.li7'].forEach((key) => {
+    list.appendChild(el('li', '', t(key)));
   });
   panel.appendChild(list);
 
   // Latest highlights (short)
-  panel.appendChild(el('h3', 'panel-title', "What's new in v" + APP_VERSION));
+  panel.appendChild(el('h3', 'panel-title', t('about.whatsNew', { version: APP_VERSION })));
   const latest = PATCH_NOTES[0];
   const highlights = el('ul', 'about-list');
-  latest.notes.slice(0, 3).forEach(n => highlights.appendChild(el('li', '', n)));
+  patchNoteTexts(latest).slice(0, 3).forEach(n => highlights.appendChild(el('li', '', n)));
   panel.appendChild(highlights);
-  const seeAll = el('button', 'btn', 'See full patch notes →');
+  const seeAll = el('button', 'btn', t('about.seePatch'));
   seeAll.onclick = () => { state.view = 'patchnotes'; render(); };
   panel.appendChild(seeAll);
 
-  const foot = el('div', 'about-foot', 'Version ' + APP_VERSION + ' — made to be used slowly.');
+  const foot = el('div', 'about-foot', t('about.foot', { version: APP_VERSION }));
   panel.appendChild(foot);
 
   wrap.appendChild(panel);
@@ -989,75 +999,28 @@ function viewAbout() {
 
 // -------- PATCH NOTES --------
 const PATCH_NOTES = [
-  { v: '1.1.14', date: '2026', notes: [
-    'Fixed backup import so habit checkmarks and custom habits survive merge and replace — habit IDs are preserved and daily checks are deep-merged.',
-    'Export now uses backup format v2, flushes data before saving, and confirms how many habits and days were included.',
-    'Added languages: English (default), Dutch, French, German, Italian, Russian, Spanish and Romanian — pick one in Settings.',
-    'Graphs: jump to any past month with the month/year picker, switch between line and donut charts, and optionally combine every habit on one shared chart.',
-  ]},
-  { v: '1.1.13', date: '2026', notes: [
-    'Serene now uses a strict single-instance lock: opening it again focuses the already-running window instead of starting a second copy.',
-    'Rebuilt the Windows executable and installer with the Serene lotus icon applied to the app, taskbar and shortcuts.',
-  ]},
-  { v: '1.1.12', date: '2026', notes: [
-    'AFK lock screen now shows a rotating library of 500+ calming quotes — a new one every time it locks.',
-    'Added an ambient Now Playing widget on the lock screen with a smooth animated waveform (reads whatever is playing on Windows: Spotify, browser tabs, Media Player, etc.).',
-    'Introduced habit streaks: a sleek flame indicator on Today shows your current check-in streak.',
-    'Optional streak notifications: get a gentle heads-up before a streak breaks, and a celebration when you hit a milestone (3, 7, 14, 21, 30, 50, 75, 100…).',
-    'New Graphs insights: plain-English correlation cards (e.g. “Quality sleep boosted mood by 1.8 pts on average”).',
-  ]},
-  { v: '1.1.11', date: '2026', notes: [
-    'Fixed desktop and Start Menu shortcuts using the wrong (default Electron) icon — the branded Serene lotus is now used everywhere.',
-    'Fixed the Today view jumping back to the top when checking a habit while scrolled down.',
-  ]},
-  { v: '1.1.10', date: '2026', notes: [
-    'Themed splash screen on launch and in-app themed notification toasts.',
-    'Branded lotus icon embedded in the app executable.',
-  ]},
-  { v: '1.1.9', date: '2026', notes: [
-    'Added an AFK lock screen with a soft blurred backdrop that appears on launch and after a few minutes of inactivity.',
-    'Slide to unlock with a glowing cursor trail, or set a password in Settings for private access.',
-    'AFK mode can be turned off completely, and the inactivity timeout is fully configurable.',
-    'Redesigned the Serene about tab so it stays perfectly readable over any custom background.',
-    'Introduced a dedicated Patch Notes tab so you can follow every update at a glance.',
-  ]},
-  { v: '1.1.8', date: '', notes: [
-    'Added an unlimited daily notes field on Today and every past day in the calendar.',
-    'Notes are included in export and import backups automatically.',
-  ]},
-  { v: '1.1.7', date: '', notes: [
-    'Transparent lotus logo used everywhere — window, taskbar, tray and installer.',
-  ]},
-  { v: '1.1.6', date: '', notes: [
-    'New brand mark across the sidebar, tray and installer.',
-  ]},
-  { v: '1.1.5', date: '', notes: [
-    'Minimize to tray option — Serene keeps running quietly in the system tray.',
-    'Themed scrollbars across every scrollable surface.',
-  ]},
-  { v: '1.1.4', date: '', notes: [
-    'New Serene about tab explaining what the app is for.',
-  ]},
-  { v: '1.1.3', date: '', notes: [
-    'Monochrome sidebar glyphs for a cleaner, more consistent look.',
-  ]},
-  { v: '1.1.2', date: '', notes: [
-    'Dedicated Graphs section with big smooth charts for mood, good habits and bad habits.',
-  ]},
-  { v: '1.1.1', date: '', notes: [
-    'Fully themed selects, number inputs and toggles.',
-    'More reliable Windows toast notifications.',
-  ]},
-  { v: '1.1.0', date: '', notes: [
-    'Native reminders with configurable frequency.',
-    'Smooth SVG line charts with tooltips.',
-    'Import and merge backups.',
-    'Manual update checker.',
-  ]},
-  { v: '1.0.0', date: '', notes: [
-    'First release of Serene.',
-  ]},
+  { v: '1.1.14', date: '2026', noteKeys: ['patch.v1_1_14.n1','patch.v1_1_14.n2','patch.v1_1_14.n3','patch.v1_1_14.n4'] },
+  { v: '1.1.13', date: '2026', noteKeys: ['patch.v1_1_13.n1','patch.v1_1_13.n2'] },
+  { v: '1.1.12', date: '2026', noteKeys: ['patch.v1_1_12.n1','patch.v1_1_12.n2','patch.v1_1_12.n3','patch.v1_1_12.n4','patch.v1_1_12.n5'] },
+  { v: '1.1.11', date: '2026', noteKeys: ['patch.v1_1_11.n1','patch.v1_1_11.n2'] },
+  { v: '1.1.10', date: '2026', noteKeys: ['patch.v1_1_10.n1','patch.v1_1_10.n2'] },
+  { v: '1.1.9', date: '2026', noteKeys: ['patch.v1_1_9.n1','patch.v1_1_9.n2','patch.v1_1_9.n3','patch.v1_1_9.n4','patch.v1_1_9.n5'] },
+  { v: '1.1.8', date: '', noteKeys: ['patch.v1_1_8.n1','patch.v1_1_8.n2'] },
+  { v: '1.1.7', date: '', noteKeys: ['patch.v1_1_7.n1'] },
+  { v: '1.1.6', date: '', noteKeys: ['patch.v1_1_6.n1'] },
+  { v: '1.1.5', date: '', noteKeys: ['patch.v1_1_5.n1','patch.v1_1_5.n2'] },
+  { v: '1.1.4', date: '', noteKeys: ['patch.v1_1_4.n1'] },
+  { v: '1.1.3', date: '', noteKeys: ['patch.v1_1_3.n1'] },
+  { v: '1.1.2', date: '', noteKeys: ['patch.v1_1_2.n1'] },
+  { v: '1.1.1', date: '', noteKeys: ['patch.v1_1_1.n1','patch.v1_1_1.n2'] },
+  { v: '1.1.0', date: '', noteKeys: ['patch.v1_1_0.n1','patch.v1_1_0.n2','patch.v1_1_0.n3','patch.v1_1_0.n4'] },
+  { v: '1.0.0', date: '', noteKeys: ['patch.v1_0_0.n1'] },
 ];
+
+function patchNoteTexts(p) {
+  if (p.noteKeys && p.noteKeys.length) return p.noteKeys.map(k => t(k));
+  return p.notes || [];
+}
 
 function viewPatchNotes() {
   const wrap = document.createDocumentFragment();
@@ -1073,10 +1036,10 @@ function viewPatchNotes() {
     const row = el('div', 'patch');
     const h = el('div', 'patch-head');
     h.appendChild(el('span', 'patch-ver', 'v' + p.v));
-    if (i === 0) h.appendChild(el('span', 'patch-badge', 'Current'));
+    if (i === 0) h.appendChild(el('span', 'patch-badge', t('patch.current')));
     row.appendChild(h);
     const ul = el('ul', 'about-list');
-    p.notes.forEach(n => ul.appendChild(el('li', '', n)));
+    patchNoteTexts(p).forEach(n => ul.appendChild(el('li', '', n)));
     row.appendChild(ul);
     panel.appendChild(row);
   });
@@ -1111,7 +1074,7 @@ function habitListPanel(kind, title, presets) {
     const c = el('div', 'check', h.enabled ? '✓' : '');
     c.onclick = (e) => { e.stopPropagation(); h.enabled = !h.enabled; save(STORAGE.habits, state.habits); render(); };
     row.appendChild(c);
-    row.appendChild(el('div', 'habit-name', h.name));
+    row.appendChild(el('div', 'habit-name', habitLabel(h)));
     if (h.preset) row.appendChild(el('div', 'habit-badge', t('common.preset')));
     const del = el('button', 'btn btn-icon btn-danger', '✕');
     del.onclick = (e) => { e.stopPropagation(); state.habits[kind] = list.filter(x => x.id !== h.id); save(STORAGE.habits, state.habits); render(); };
@@ -1134,8 +1097,8 @@ function habitListPanel(kind, title, presets) {
   panel.appendChild(addRow);
 
   // Preset suggestions
-  const existing = new Set(list.map(h => h.name));
-  const missing = presets.filter(p => !existing.has(p.name));
+  const existingKeys = new Set(list.map(h => h.labelKey || h.canonicalName || h.name));
+  const missing = presets.filter(p => !existingKeys.has(p.labelKey) && !existingKeys.has(p.name));
   if (missing.length) {
     panel.appendChild(el('div', 'panel-title', t('habits.addPreset')));
     const wrap = el('div', 'row wrap');
@@ -1143,7 +1106,7 @@ function habitListPanel(kind, title, presets) {
       const label = p.labelKey ? t(p.labelKey) : p.name;
       const b = el('button', 'btn btn-icon', '+ ' + label);
       b.onclick = () => {
-        state.habits[kind].push({ id: uid(), name: p.name, enabled: true, preset: true });
+        state.habits[kind].push({ id: uid(), name: t(p.labelKey), canonicalName: p.name, labelKey: p.labelKey, enabled: true, preset: true });
         save(STORAGE.habits, state.habits); render();
       };
       wrap.appendChild(b);
@@ -1182,6 +1145,7 @@ function viewSettings() {
     state.settings.language = langSel.value;
     save(STORAGE.settings, state.settings);
     document.documentElement.lang = langSel.value;
+    syncPresetHabitNames();
     render();
   };
   langRow.appendChild(langSel);
@@ -1225,8 +1189,8 @@ function viewSettings() {
   // NOTIFICATIONS
   const nRow = el('div', 'setting-row');
   const nl = el('div', 'setting-label');
-  nl.appendChild(el('b', '', 'Reminders'));
-  nl.appendChild(el('span', '', 'Gentle nudges to check in with yourself throughout the day.'));
+  nl.appendChild(el('b', '', t('settings.reminders')));
+  nl.appendChild(el('span', '', t('settings.remindersHint')));
   nRow.appendChild(nl);
   const nActs = el('div', 'row');
   const tgl = el('label', 'switch');
@@ -1250,13 +1214,14 @@ function viewSettings() {
   if (state.settings.notifyEnabled) {
     const fRow = el('div', 'setting-row');
     const fl = el('div', 'setting-label');
-    fl.appendChild(el('b', '', 'Reminder frequency'));
-    fl.appendChild(el('span', '', `Send a reminder every few hours between ${fmtHr(state.settings.notifyStart)} and ${fmtHr(state.settings.notifyEnd)}.`));
+    fl.appendChild(el('b', '', t('settings.freq')));
+    fl.appendChild(el('span', '', t('settings.freqHint', { start: fmtHr(state.settings.notifyStart), end: fmtHr(state.settings.notifyEnd) })));
     fRow.appendChild(fl);
     const fActs = el('div', 'row');
     const sel = document.createElement('select');
     [1,2,3,4,6,8].forEach(h => {
-      const o = document.createElement('option'); o.value = h; o.textContent = `Every ${h} hour${h>1?'s':''}`;
+      const o = document.createElement('option'); o.value = h;
+      o.textContent = h === 1 ? t('settings.everyHour', { n: h }) : t('settings.everyHours', { n: h });
       if (state.settings.notifyEveryHours === h) o.selected = true;
       sel.appendChild(o);
     });
@@ -1283,10 +1248,10 @@ function viewSettings() {
     };
     const startI = mkHourInput(state.settings.notifyStart, (n) => { state.settings.notifyStart = n; save(STORAGE.settings, state.settings); scheduleNotifications(); render(); });
     const endI = mkHourInput(state.settings.notifyEnd, (n) => { state.settings.notifyEnd = n; save(STORAGE.settings, state.settings); scheduleNotifications(); render(); });
-    fActs.appendChild(el('span', 'muted', 'from')); fActs.appendChild(startI);
-    fActs.appendChild(el('span', 'muted', 'to')); fActs.appendChild(endI);
+    fActs.appendChild(el('span', 'muted', t('settings.from'))); fActs.appendChild(startI);
+    fActs.appendChild(el('span', 'muted', t('settings.to'))); fActs.appendChild(endI);
 
-    const test = el('button', 'btn', 'Send test');
+    const test = el('button', 'btn', t('settings.sendTest'));
     test.onclick = async () => {
       const ok = await sendNotification('Serene', 'This is a test reminder. Take a slow breath.');
       if (!ok) alert('Could not show a notification. On Windows, make sure Serene is allowed to send notifications in Settings → System → Notifications.');
@@ -1297,25 +1262,25 @@ function viewSettings() {
 
     // Streak notification toggles
     const mkSwitch = (checked, on) => {
-      const t = el('label', 'switch');
+      const sw = el('label', 'switch');
       const c = document.createElement('input'); c.type = 'checkbox'; c.checked = !!checked;
       const s = el('span', 'slider');
-      t.appendChild(c); t.appendChild(s);
+      sw.appendChild(c); sw.appendChild(s);
       c.onchange = () => on(c.checked);
-      return t;
+      return sw;
     };
     const streakRow = el('div', 'setting-row');
     const srl = el('div', 'setting-label');
-    srl.appendChild(el('b', '', 'Streak notifications'));
-    srl.appendChild(el('span', '', 'Celebrate milestones (3, 7, 14, 21, 30, 50, 75, 100 days…) and get a heads‑up in the evening if today’s streak is about to break.'));
+    srl.appendChild(el('b', '', t('settings.streakNotif')));
+    srl.appendChild(el('span', '', t('settings.streakNotifHint')));
     streakRow.appendChild(srl);
     const srActs = el('div', 'row');
     const mLbl = el('label', 'inline-toggle');
     mLbl.appendChild(mkSwitch(state.settings.streakNotifyMilestone, (v) => { state.settings.streakNotifyMilestone = v; save(STORAGE.settings, state.settings); }));
-    mLbl.appendChild(el('span', 'muted', 'Milestones'));
+    mLbl.appendChild(el('span', 'muted', t('settings.milestones')));
     const rLbl = el('label', 'inline-toggle');
     rLbl.appendChild(mkSwitch(state.settings.streakNotifyAtRisk, (v) => { state.settings.streakNotifyAtRisk = v; save(STORAGE.settings, state.settings); }));
-    rLbl.appendChild(el('span', 'muted', 'About to break'));
+    rLbl.appendChild(el('span', 'muted', t('settings.atRisk')));
     srActs.appendChild(mLbl); srActs.appendChild(rLbl);
     streakRow.appendChild(srActs);
     panel.appendChild(streakRow);
@@ -1324,8 +1289,8 @@ function viewSettings() {
   // WINDOW BEHAVIOR
   const wRow = el('div', 'setting-row');
   const wl = el('div', 'setting-label');
-  wl.appendChild(el('b', '', 'Minimize to tray'));
-  wl.appendChild(el('span', '', 'When on, closing or minimizing the window keeps Serene running as an icon in the system tray. Click the tray icon to reopen, or right‑click it to quit.'));
+  wl.appendChild(el('b', '', t('settings.tray')));
+  wl.appendChild(el('span', '', t('settings.trayHint')));
   wRow.appendChild(wl);
   const wActs = el('div', 'row');
   const wtgl = el('label', 'switch');
@@ -1346,8 +1311,8 @@ function viewSettings() {
   // AFK LOCK
   const aRow = el('div', 'setting-row');
   const al = el('div', 'setting-label');
-  al.appendChild(el('b', '', 'AFK lock screen'));
-  al.appendChild(el('span', '', 'Blur the app when you launch it and after a few minutes of inactivity. Slide to unlock, or set a password below for private access.'));
+  al.appendChild(el('b', '', t('settings.afk')));
+  al.appendChild(el('span', '', t('settings.afkHint')));
   aRow.appendChild(al);
   const aActs = el('div', 'row');
   const atgl = el('label', 'switch');
@@ -1369,19 +1334,20 @@ function viewSettings() {
   if (state.settings.afkEnabled) {
     const tRow = el('div', 'setting-row');
     const tl2 = el('div', 'setting-label');
-    tl2.appendChild(el('b', '', 'Inactivity timeout'));
-    tl2.appendChild(el('span', '', 'Lock automatically after this many minutes with no mouse or keyboard input.'));
+    tl2.appendChild(el('b', '', t('settings.timeout')));
+    tl2.appendChild(el('span', '', t('settings.timeoutHint')));
     tRow.appendChild(tl2);
     const tActs = el('div', 'row');
     const tSel = document.createElement('select');
     [1,2,3,5,10,15,20,30].forEach(n => {
-      const o = document.createElement('option'); o.value = n; o.textContent = `${n} minute${n>1?'s':''}`;
+      const o = document.createElement('option'); o.value = n;
+      o.textContent = n === 1 ? t('settings.minute', { n }) : t('settings.minutes', { n });
       if (state.settings.afkTimeoutMin === n) o.selected = true;
       tSel.appendChild(o);
     });
     tSel.onchange = () => { state.settings.afkTimeoutMin = Number(tSel.value); save(STORAGE.settings, state.settings); resetIdleTimer(); };
     tActs.appendChild(tSel);
-    const lockNow = el('button', 'btn', 'Lock now');
+    const lockNow = el('button', 'btn', t('settings.lockNow'));
     lockNow.onclick = () => showAfkLock();
     tActs.appendChild(lockNow);
     tRow.appendChild(tActs);
@@ -1389,18 +1355,18 @@ function viewSettings() {
 
     const pRow = el('div', 'setting-row');
     const pl = el('div', 'setting-label');
-    pl.appendChild(el('b', '', 'Password'));
-    pl.appendChild(el('span', '', state.settings.afkPassword ? 'Password is set. Unlock requires the password (slide is disabled).' : 'No password. Unlock with a slide gesture.'));
+    pl.appendChild(el('b', '', t('settings.password')));
+    pl.appendChild(el('span', '', state.settings.afkPassword ? t('settings.passwordSet') : t('settings.passwordNone')));
     pRow.appendChild(pl);
     const pActs = el('div', 'row');
-    const pInp = document.createElement('input'); pInp.type = 'password'; pInp.placeholder = 'New password (leave empty to disable)';
-    const pSave = el('button', 'btn btn-primary', state.settings.afkPassword ? 'Update' : 'Set');
+    const pInp = document.createElement('input'); pInp.type = 'password'; pInp.placeholder = t('settings.passwordPlaceholder');
+    const pSave = el('button', 'btn btn-primary', state.settings.afkPassword ? t('settings.updatePwd') : t('settings.set'));
     pSave.onclick = () => {
       state.settings.afkPassword = pInp.value || '';
       save(STORAGE.settings, state.settings);
       render();
     };
-    const pClear = el('button', 'btn btn-danger', 'Remove');
+    const pClear = el('button', 'btn btn-danger', t('settings.remove'));
     pClear.onclick = () => { state.settings.afkPassword = ''; save(STORAGE.settings, state.settings); render(); };
     pActs.appendChild(pInp); pActs.appendChild(pSave);
     if (state.settings.afkPassword) pActs.appendChild(pClear);
@@ -1470,14 +1436,17 @@ function viewSettings() {
   // UPDATES
   const uRow = el('div', 'setting-row');
   const ul = el('div', 'setting-label');
-  ul.appendChild(el('b', '', 'App version & updates'));
-  const verSpan = el('span', '', `Current version: ${APP_VERSION}. ${state.settings.lastUpdateResult || 'Click check to look for a newer release.'}`);
+  ul.appendChild(el('b', '', t('settings.updates')));
+  const verSpan = el('span', '', t('settings.updatesHint', {
+    version: APP_VERSION,
+    status: state.settings.lastUpdateResult || t('settings.updatesDefault'),
+  }));
   ul.appendChild(verSpan);
   uRow.appendChild(ul);
   const uActs = el('div', 'row wrap');
-  const urlI = document.createElement('input'); urlI.type = 'text'; urlI.placeholder = 'Update manifest URL (JSON)'; urlI.value = state.settings.updateUrl || ''; urlI.style.minWidth = '260px';
+  const urlI = document.createElement('input'); urlI.type = 'text'; urlI.placeholder = t('settings.manifestPlaceholder'); urlI.value = state.settings.updateUrl || ''; urlI.style.minWidth = '260px';
   urlI.onchange = () => { state.settings.updateUrl = urlI.value.trim(); save(STORAGE.settings, state.settings); };
-  const check = el('button', 'btn btn-primary', 'Check for updates');
+  const check = el('button', 'btn btn-primary', t('settings.checkUpdates'));
   check.onclick = async () => {
     check.disabled = true; check.textContent = 'Checking…';
     const res = await checkForUpdates();
@@ -1850,15 +1819,15 @@ function showAfkLock() {
   dateEl.className = 'afk-date';
   const updateClock = () => {
     const d = new Date();
-    time.textContent = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-    dateEl.textContent = d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+    time.textContent = d.toLocaleTimeString(localeTag(), { hour: '2-digit', minute: '2-digit' });
+    dateEl.textContent = d.toLocaleDateString(localeTag(), { weekday: 'long', month: 'long', day: 'numeric' });
   };
   updateClock();
   const clockInt = setInterval(updateClock, 1000);
 
   const title = document.createElement('div');
   title.className = 'afk-title';
-  title.textContent = 'Serene is resting';
+  title.textContent = t('afk.resting');
 
   card.appendChild(time);
   card.appendChild(dateEl);
@@ -1937,12 +1906,12 @@ function showAfkLock() {
     form.className = 'afk-pw';
     const inp = document.createElement('input');
     inp.type = 'password';
-    inp.placeholder = 'Enter password to unlock';
+    inp.placeholder = t('afk.passwordPlaceholder');
     inp.autocomplete = 'off';
     const err = document.createElement('div');
     err.className = 'afk-err';
     const btn = document.createElement('button');
-    btn.type = 'submit'; btn.className = 'btn btn-primary'; btn.textContent = 'Unlock';
+    btn.type = 'submit'; btn.className = 'btn btn-primary'; btn.textContent = t('afk.unlock');
     form.appendChild(inp); form.appendChild(btn); form.appendChild(err);
     form.onsubmit = (e) => {
       e.preventDefault();
@@ -1950,7 +1919,7 @@ function showAfkLock() {
         clearInterval(clockInt);
         hideAfkLock();
       } else {
-        err.textContent = 'Incorrect password';
+        err.textContent = t('afk.incorrect');
         inp.value = '';
         card.animate([
           { transform: 'translateX(0)' }, { transform: 'translateX(-10px)' },
@@ -1967,7 +1936,7 @@ function showAfkLock() {
     track.className = 'afk-track';
     const label = document.createElement('div');
     label.className = 'afk-slide-label';
-    label.textContent = 'Slide to unlock →';
+    label.textContent = t('afk.slide');
     const handle = document.createElement('div');
     handle.className = 'afk-handle';
     handle.textContent = '❋';
@@ -2020,7 +1989,7 @@ function showAfkLock() {
 
   const hint = document.createElement('div');
   hint.className = 'afk-hint';
-  hint.textContent = state.settings.afkPassword ? 'Enter your password to return.' : 'Drag the glowing dot all the way across to return.';
+  hint.textContent = state.settings.afkPassword ? t('afk.hintPassword') : t('afk.hintSlide');
   card.appendChild(hint);
 
   back.appendChild(card);

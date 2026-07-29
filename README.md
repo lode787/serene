@@ -17,9 +17,9 @@ Serene is designed to help you understand yourself better, one day at a time. It
 
 ## Latest Version
 
-**v1.1.14** - Backup integrity fix, multi-language UI, donut charts and past-month graph browsing
+**Latest release** — website download always uses the newest GitHub Release zip (`Serene-Windows.zip`)
 
-[📥 Download Latest Release](https://github.com/lode787/serene/releases/download/v1.1.14/Serene-Windows-v1.1.14.zip)
+[📥 Download Latest Release](https://github.com/lode787/serene/releases/latest/download/Serene-Windows.zip)
 
 ## Website
 

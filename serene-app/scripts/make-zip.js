@@ -11,6 +11,7 @@ const releaseRoot = path.join(root, 'release');
 const bundleName = `Serene-Windows-v${version}`;
 const bundleDir = path.join(releaseRoot, bundleName);
 const zipPath = path.join(releaseRoot, `${bundleName}.zip`);
+const latestZipPath = path.join(releaseRoot, 'Serene-Windows.zip');
 
 if (!fs.existsSync(portableDir)) {
   console.error(`Missing packaged app at:\n  ${portableDir}\nRun "npm run package" first.`);
@@ -40,8 +41,10 @@ if (result.status !== 0) {
   process.exit(result.status || 1);
 }
 
+fs.copyFileSync(zipPath, latestZipPath);
+
 const sizeMb = (fs.statSync(zipPath).size / (1024 * 1024)).toFixed(1);
-console.log(`\nRelease ready:\n  ${zipPath}\n  (${sizeMb} MB)`);
+console.log(`\nRelease ready:\n  ${zipPath}\n  ${latestZipPath}\n  (${sizeMb} MB)`);
 console.log(`\nContents:\n  ${bundleName}/\n    ${portableName}/`);
 
 function copyDir(src, dest) {

@@ -24,6 +24,7 @@ npm run release
 Output:
 
 - `dist/Serene-Portable-win32-x64/` — runnable portable build
-- `release/Serene-Windows-vX.Y.Z.zip` — upload this to GitHub Releases
+- `release/Serene-Windows-vX.Y.Z.zip` — versioned zip
+- `release/Serene-Windows.zip` — stable name used by the website (`/releases/latest/download/Serene-Windows.zip`)
 
-The original `SereneSetup.exe` installer is not rebuilt yet; releases from this workflow ship the portable folder inside the zip (same layout users already extract and run via `Serene.exe`).
+Tag `vX.Y.Z` and push it to publish both files to GitHub Releases automatically.

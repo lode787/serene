@@ -35,7 +35,9 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: serene-app/release/Serene-Windows-v*.zip
+          files: |
+            serene-app/release/Serene-Windows-v*.zip
+            serene-app/release/Serene-Windows.zip
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
