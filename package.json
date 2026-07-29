@@ -1,0 +1,23 @@
+{
+  "name": "new-project-app-health",
+  "version": "1.0.0",
+  "description": "A calm, private companion for your mental wellbeing. Track your mood and habits—nothing leaves your computer.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lode787/serene.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lode787/serene/issues"
+  },
+  "homepage": "https://github.com/lode787/serene#readme",
+  "dependencies": {
+    "sharp": "^0.35.3"
+  }
+}

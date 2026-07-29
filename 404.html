@@ -1,165 +1,387 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Page not found">
+    <meta name="theme-color" content="#0c0a14">
     <title>404 - Page Not Found | Serene</title>
     <link rel="icon" type="image/x-icon" href="/icons/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root,
+        [data-theme="dark"] {
+            --bg-0: #0c0a14;
+            --bg-1: #15122a;
+            --surface: rgba(255, 255, 255, 0.06);
+            --border: rgba(255, 255, 255, 0.1);
+            --border-strong: rgba(255, 255, 255, 0.18);
+            --text: #f4f2fb;
+            --text-muted: #a8a0c0;
+            --primary: #8b7cf6;
+            --accent: #c084fc;
+            --cyan: #67e8f9;
+            --glow: rgba(139, 124, 246, 0.35);
+            --seg-bg: rgba(255, 255, 255, 0.06);
+            --seg-active: #8b7cf6;
+            --orb-1: rgba(139, 124, 246, 0.22);
+            --orb-2: rgba(103, 232, 249, 0.12);
+            color-scheme: dark;
         }
 
-        :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-            --bg-dark: #0f172a;
-            --bg-darker: #020617;
-            --glass-light: rgba(255, 255, 255, 0.08);
-            --glass-border: rgba(255, 255, 255, 0.15);
-            --text-primary: #f1f5f9;
-            --text-secondary: #cbd5e1;
-            --accent: #ec4899;
-        }
-
-        html {
-            scroll-behavior: smooth;
+        [data-theme="light"] {
+            --bg-0: #eef0fb;
+            --bg-1: #e4e7f8;
+            --surface: rgba(255, 255, 255, 0.78);
+            --border: rgba(90, 80, 140, 0.12);
+            --border-strong: rgba(90, 80, 140, 0.2);
+            --text: #1e1a32;
+            --text-muted: #5c5678;
+            --primary: #7c6aef;
+            --accent: #a855f7;
+            --cyan: #22d3ee;
+            --glow: rgba(124, 106, 239, 0.25);
+            --seg-bg: rgba(255, 255, 255, 0.65);
+            --seg-active: #7c6aef;
+            --orb-1: rgba(124, 106, 239, 0.18);
+            --orb-2: rgba(34, 211, 238, 0.12);
+            color-scheme: light;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-            background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-darker) 100%);
-            color: var(--text-primary);
-            line-height: 1.6;
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-0);
+            color: var(--text);
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             position: relative;
-            overflow-x: hidden;
+            overflow: hidden;
+            transition: background 0.45s ease, color 0.35s ease;
+            padding: 24px;
         }
 
-        body::before {
-            content: '';
+        ::selection {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .ambient {
             position: fixed;
-            top: -50%;
-            right: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+            inset: 0;
             pointer-events: none;
             z-index: 0;
         }
 
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 0 20px;
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            animation: drift 16s ease-in-out infinite;
+        }
+
+        .orb-a {
+            width: 50vw; height: 50vw; max-width: 560px; max-height: 560px;
+            top: -20%; left: -10%;
+            background: var(--orb-1);
+        }
+
+        .orb-b {
+            width: 40vw; height: 40vw; max-width: 420px; max-height: 420px;
+            bottom: -10%; right: -8%;
+            background: var(--orb-2);
+            animation-delay: -7s;
+        }
+
+        @keyframes drift {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(4%, 5%); }
+        }
+
+        .theme-seg {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+            display: inline-flex;
+            padding: 4px;
+            border-radius: 999px;
+            background: var(--seg-bg);
+            border: 1px solid var(--border);
+            gap: 2px;
+            backdrop-filter: blur(12px);
+        }
+
+        .theme-seg button {
+            appearance: none;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            width: 36px;
+            height: 32px;
+            border-radius: 999px;
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+            transition: background 0.25s ease, color 0.25s ease;
+        }
+
+        .theme-seg button.active {
+            background: var(--seg-active);
+            color: #fff;
+            box-shadow: 0 4px 14px var(--glow);
+        }
+
+        .theme-seg button svg { width: 16px; height: 16px; }
+
+        .card {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 480px;
+            text-align: center;
+            padding: 48px 36px;
+            border-radius: 28px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            backdrop-filter: blur(18px);
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
+            animation: rise 0.7s ease both;
+        }
+
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo-wrap {
+            width: 88px;
+            height: 88px;
+            margin: 0 auto 20px;
+            border-radius: 24px;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(145deg, rgba(139,124,246,0.2), rgba(103,232,249,0.12));
+            border: 1px solid var(--border);
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .logo-wrap::before {
+            content: '';
+            position: absolute;
+            inset: -50%;
+            background: conic-gradient(from 0deg, transparent, var(--primary), transparent, var(--cyan), transparent);
+            opacity: 0.25;
+            animation: spin 10s linear infinite;
+        }
+
+        .lotus-mark {
             position: relative;
             z-index: 1;
-            text-align: center;
+            width: 64px;
+            height: 64px;
+            overflow: visible;
+            isolation: isolate;
+            filter: drop-shadow(0 6px 14px var(--glow));
         }
 
-        .error-box {
-            background: var(--glass-light);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            padding: 60px 40px;
-            backdrop-filter: blur(10px);
+        .lotus-mark .petal {
+            transform-box: view-box;
+            transform-origin: 128px 216px;
+            transform: scale(0.2);
+            opacity: 0;
+            transition:
+                transform 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+                opacity 0.45s ease;
+            transition-delay: calc(var(--i) * 45ms);
         }
 
-        .error-code {
-            font-size: 120px;
-            font-weight: 900;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 20px;
+        .lotus-mark.is-bloomed .petal {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .code {
+            font-size: clamp(4.5rem, 16vw, 6.5rem);
+            font-weight: 800;
             line-height: 1;
+            letter-spacing: -0.04em;
+            background: linear-gradient(120deg, var(--primary), var(--accent), var(--cyan));
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: sheen 6s ease infinite;
+            margin-bottom: 8px;
+        }
+
+        @keyframes sheen {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
         }
 
         h1 {
-            font-size: 2.5rem;
-            margin-bottom: 15px;
-            color: var(--text-primary);
+            font-size: 1.75rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 10px;
         }
 
         p {
-            font-size: 1.1rem;
-            color: var(--text-secondary);
-            margin-bottom: 30px;
-            line-height: 1.8;
+            color: var(--text-muted);
+            font-size: 1.02rem;
+            line-height: 1.7;
+            margin-bottom: 28px;
         }
 
         .btn {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 10px;
-            padding: 14px 32px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 1rem;
+            padding: 14px 26px;
+            border-radius: 14px;
+            font-family: inherit;
+            font-size: 0.98rem;
             font-weight: 600;
-            cursor: pointer;
             text-decoration: none;
-            transition: all 0.3s ease;
-            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
+            color: #fff;
+            background: linear-gradient(120deg, #8b7cf6, #6d5ef5 45%, #5b8def);
+            box-shadow: 0 10px 30px var(--glow);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
         }
 
         .btn:hover {
-            background: var(--primary-dark);
-            transform: translateY(-4px);
-            box-shadow: 0 12px 40px rgba(99, 102, 241, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 16px 36px var(--glow);
         }
 
-        .emoji {
-            font-size: 80px;
-            margin-bottom: 20px;
-            display: block;
-            animation: bounce 2s ease-in-out infinite;
-        }
+        .btn svg { width: 18px; height: 18px; }
 
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
-        }
-
-        @media (max-width: 768px) {
-            .error-box {
-                padding: 40px 20px;
-            }
-
-            .error-code {
-                font-size: 80px;
-            }
-
-            h1 {
-                font-size: 2rem;
-            }
-
-            .emoji {
-                font-size: 60px;
-            }
+        @media (max-width: 480px) {
+            .card { padding: 36px 22px; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="error-box">
-            <span class="emoji">🧘</span>
-            <div class="error-code">404</div>
-            <h1>Page Not Found</h1>
-            <p>This page seems to have wandered off. Let's bring you back to the calm.</p>
-            <a href="/" class="btn">
-                Return Home
-            </a>
-        </div>
+    <div class="ambient" aria-hidden="true">
+        <div class="orb orb-a"></div>
+        <div class="orb orb-b"></div>
     </div>
+
+    <div class="theme-seg" role="group" aria-label="Theme">
+        <button type="button" data-theme-set="dark" title="Dark" aria-label="Dark theme">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <button type="button" data-theme-set="light" title="Light" aria-label="Light theme">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        </button>
+        <button type="button" data-theme-set="system" title="System" aria-label="System theme">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        </button>
+    </div>
+
+    <div class="card">
+        <div class="logo-wrap" id="logo-wrap" role="button" tabindex="0" aria-label="Replay lotus bloom">
+            <svg class="lotus-mark" id="lotus-svg" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Serene">
+                <defs>
+                    <radialGradient id="petalGrad" gradientUnits="userSpaceOnUse" cx="128" cy="216" r="182">
+                        <stop offset="0%" stop-color="#A9F2FA"/>
+                        <stop offset="20%" stop-color="#A5EEF9"/>
+                        <stop offset="40%" stop-color="#BEE5F9"/>
+                        <stop offset="60%" stop-color="#CADBFB"/>
+                        <stop offset="80%" stop-color="#D5D6FB"/>
+                        <stop offset="100%" stop-color="#EEE6FC"/>
+                    </radialGradient>
+                </defs>
+                <path class="petal" style="--i:2" fill="url(#petalGrad)" fill-opacity="0.88" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="1"
+                    d="M128 38 C166 68 194 140 128 216 C62 140 90 68 128 38 Z"/>
+                <path class="petal" style="--i:1" fill="url(#petalGrad)" fill-opacity="0.88" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="1"
+                    d="M35 86 C108 118 142 172 128 216 C50 202 29 140 35 86 Z"/>
+                <path class="petal" style="--i:3" fill="url(#petalGrad)" fill-opacity="0.88" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="1"
+                    d="M221 86 C148 118 114 172 128 216 C206 202 227 140 221 86 Z"/>
+                <path class="petal" style="--i:0" fill="url(#petalGrad)" fill-opacity="0.88" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="1"
+                    d="M2 156 C36 142 104 152 128 216 C78 227 20 204 2 156 Z"/>
+                <path class="petal" style="--i:4" fill="url(#petalGrad)" fill-opacity="0.88" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="1"
+                    d="M254 156 C220 142 152 152 128 216 C178 227 236 204 254 156 Z"/>            </svg>
+        </div>
+        <div class="code">404</div>
+        <h1>Page not found</h1>
+        <p>This page seems to have wandered off. Let's bring you back to the calm.</p>
+        <a href="/" class="btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Return Home
+        </a>
+    </div>
+
+    <script>
+        (function () {
+            const root = document.documentElement;
+            const metaTheme = document.querySelector('meta[name="theme-color"]');
+            const buttons = document.querySelectorAll('[data-theme-set]');
+            const mq = window.matchMedia('(prefers-color-scheme: dark)');
+
+            function resolved(pref) {
+                if (pref === 'system') return mq.matches ? 'dark' : 'light';
+                return pref;
+            }
+
+            function apply(pref) {
+                const theme = resolved(pref);
+                root.setAttribute('data-theme', theme);
+                if (metaTheme) metaTheme.setAttribute('content', theme === 'dark' ? '#0c0a14' : '#eef0fb');
+                buttons.forEach((btn) => btn.classList.toggle('active', btn.dataset.themeSet === pref));
+            }
+
+            let preference = localStorage.getItem('serene-theme') || 'system';
+            apply(preference);
+
+            buttons.forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    preference = btn.dataset.themeSet;
+                    localStorage.setItem('serene-theme', preference);
+                    apply(preference);
+                });
+            });
+
+            mq.addEventListener('change', () => {
+                if (preference === 'system') apply('system');
+            });
+
+            const wrap = document.getElementById('logo-wrap');
+            const lotus = document.getElementById('lotus-svg');
+            let blooming = false;
+
+            function bloom() {
+                if (blooming) return;
+                blooming = true;
+                lotus.classList.remove('is-bloomed');
+                void lotus.offsetWidth;
+                requestAnimationFrame(() => {
+                    lotus.classList.add('is-bloomed');
+                    setTimeout(() => { blooming = false; }, 850);
+                });
+            }
+
+            setTimeout(bloom, 200);
+            wrap.addEventListener('click', bloom);
+            wrap.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    bloom();
+                }
+            });
+        })();
+    </script>
 </body>
 </html>

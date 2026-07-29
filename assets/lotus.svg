@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <radialGradient id="petalGrad" gradientUnits="userSpaceOnUse" cx="128" cy="216" r="182">
+      <stop offset="0%" stop-color="#A9F2FA"/>
+      <stop offset="20%" stop-color="#A5EEF9"/>
+      <stop offset="40%" stop-color="#BEE5F9"/>
+      <stop offset="60%" stop-color="#CADBFB"/>
+      <stop offset="80%" stop-color="#D5D6FB"/>
+      <stop offset="100%" stop-color="#EEE6FC"/>
+    </radialGradient>
+  </defs>
+  <g>
+    <path class="petal" fill="url(#petalGrad)" fill-opacity="0.88" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="1"
+      d="M128 38 C166 68 194 140 128 216 C62 140 90 68 128 38 Z"/>
+    <path class="petal" fill="url(#petalGrad)" fill-opacity="0.88" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="1"
+      d="M35 86 C108 118 142 172 128 216 C50 202 29 140 35 86 Z"/>
+    <path class="petal" fill="url(#petalGrad)" fill-opacity="0.88" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="1"
+      d="M221 86 C148 118 114 172 128 216 C206 202 227 140 221 86 Z"/>
+    <path class="petal" fill="url(#petalGrad)" fill-opacity="0.88" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="1"
+      d="M2 156 C36 142 104 152 128 216 C78 227 20 204 2 156 Z"/>
+    <path class="petal" fill="url(#petalGrad)" fill-opacity="0.88" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="1"
+      d="M254 156 C220 142 152 152 128 216 C178 227 236 204 254 156 Z"/>
+  </g>
+</svg>

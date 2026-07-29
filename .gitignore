@@ -3,3 +3,6 @@
 *.dll
 *.bin
 *.dat
+node_modules/
+package-lock.json
+assets/lotus-render.png
