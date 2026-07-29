@@ -4,5 +4,12 @@
 *.bin
 *.dat
 node_modules/
-package-lock.json
+/package-lock.json
+!serene-app/package-lock.json
 assets/lotus-render.png
+
+# Original Windows release zip (huge) + unpack scratch
+Serene app/
+serene-app/node_modules/
+serene-app/dist/
+serene-app/release/

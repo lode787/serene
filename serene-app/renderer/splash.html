@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Serene</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body {
+    margin: 0; height: 100%; overflow: hidden;
+    font-family: -apple-system, "Segoe UI", Inter, system-ui, sans-serif;
+    color: #eaf2ff;
+    background:
+      radial-gradient(1200px 800px at 20% 10%, rgba(120,180,255,.35), transparent 60%),
+      radial-gradient(900px 600px at 85% 90%, rgba(180,140,255,.30), transparent 60%),
+      linear-gradient(160deg, #0a1230 0%, #0b1020 55%, #06091a 100%);
+  }
+  .wrap {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    -webkit-app-region: drag;
+  }
+  .glass {
+    width: 320px; padding: 34px 28px 26px;
+    border-radius: 22px;
+    background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+    border: 1px solid rgba(255,255,255,.18);
+    box-shadow: 0 30px 80px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.15);
+    backdrop-filter: blur(24px) saturate(140%);
+    text-align: center;
+  }
+  .logo {
+    width: 96px; height: 96px; margin: 0 auto 14px;
+    filter: drop-shadow(0 8px 28px rgba(150,190,255,.45));
+    animation: float 3.4s ease-in-out infinite;
+  }
+  @keyframes float { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-6px) } }
+  h1 {
+    margin: 0 0 4px; font-size: 24px; font-weight: 600; letter-spacing: .5px;
+    background: linear-gradient(90deg, #cfe2ff, #e7d6ff);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  p { margin: 0 0 20px; font-size: 12.5px; opacity: .75; letter-spacing: .3px; }
+  .bar {
+    position: relative; height: 4px; border-radius: 999px; overflow: hidden;
+    background: rgba(255,255,255,.10);
+  }
+  .bar::before {
+    content: ""; position: absolute; inset: 0; width: 40%;
+    background: linear-gradient(90deg, transparent, #9dc4ff, #c4a7ff, transparent);
+    border-radius: 999px;
+    animation: slide 1.4s ease-in-out infinite;
+  }
+  @keyframes slide {
+    0% { transform: translateX(-60%); }
+    100% { transform: translateX(260%); }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="glass">
+      <img class="logo" src="../assets/icon.png" alt="Serene" />
+      <h1>Serene</h1>
+      <p>Preparing your calm space…</p>
+      <div class="bar"></div>
+    </div>
+  </div>
+</body>
+</html>
