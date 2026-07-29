@@ -1,7 +1,7 @@
 {
   "name": "serene",
   "productName": "Serene",
-  "version": "1.1.13",
+  "version": "1.1.14",
   "description": "Serene - Mental health and habit tracker",
   "main": "main.cjs",
   "author": "Serene",

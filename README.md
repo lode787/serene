@@ -17,9 +17,9 @@ Serene is designed to help you understand yourself better, one day at a time. It
 
 ## Latest Version
 
-**v1.1.13** - Single-instance lock, improved Windows executable with new Serene lotus icon
+**v1.1.14** - Backup integrity fix, multi-language UI, donut charts and past-month graph browsing
 
-[📥 Download Latest Release](https://github.com/lode787/serene/releases/download/1.1.13/Serene-1.1.13.zip)
+[📥 Download Latest Release](https://github.com/lode787/serene/releases/download/v1.1.14/Serene-Windows-v1.1.14.zip)
 
 ## Website
 

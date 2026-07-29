@@ -8,18 +8,18 @@ const STORAGE = {
 };
 
 const PRESETS_POS = [
-  { name: 'Early start (woke up early)' },
-  { name: 'Getting 7–9 hours of quality sleep' },
-  { name: 'Drinking enough water' },
-  { name: 'Ate at least 3 times' },
-  { name: 'Keeping your living/workspace tidy' },
-  { name: 'Have a decent social interaction with someone' },
+  { name: 'Early start (woke up early)', labelKey: 'preset.pos.early' },
+  { name: 'Getting 7–9 hours of quality sleep', labelKey: 'preset.pos.sleep' },
+  { name: 'Drinking enough water', labelKey: 'preset.pos.water' },
+  { name: 'Ate at least 3 times', labelKey: 'preset.pos.meals' },
+  { name: 'Keeping your living/workspace tidy', labelKey: 'preset.pos.tidy' },
+  { name: 'Have a decent social interaction with someone', labelKey: 'preset.pos.social' },
 ];
 const PRESETS_NEG = [
-  { name: 'Skipped meals' },
-  { name: 'Excess screen time before bed' },
-  { name: 'Doom-scrolling' },
-  { name: 'Skipped movement / exercise' },
+  { name: 'Skipped meals', labelKey: 'preset.neg.meals' },
+  { name: 'Excess screen time before bed', labelKey: 'preset.neg.screen' },
+  { name: 'Doom-scrolling', labelKey: 'preset.neg.doom' },
+  { name: 'Skipped movement / exercise', labelKey: 'preset.neg.movement' },
 ];
 
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -51,8 +51,20 @@ const todayKey = (d = new Date()) => {
   return `${y}-${m}-${day}`;
 };
 const parseKey = (k) => { const [y,m,d] = k.split('-').map(Number); return new Date(y, m-1, d); };
-const fmtLongDate = (d) => d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-const monthName = (d) => d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+function localeTag() {
+  try {
+    if (window.SereneI18n && window.SereneI18n.localeTag) return window.SereneI18n.localeTag(state.settings.language);
+  } catch (e) {}
+  return undefined;
+}
+function t(key, vars) {
+  try {
+    if (window.SereneI18n && window.SereneI18n.t) return window.SereneI18n.t(key, vars, state.settings.language);
+  } catch (e) {}
+  return key;
+}
+const fmtLongDate = (d) => d.toLocaleDateString(localeTag(), { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+const monthName = (d) => d.toLocaleDateString(localeTag(), { month: 'long', year: 'numeric' });
 
 // State
 let state = {
@@ -61,11 +73,11 @@ let state = {
   detailKey: null,
   habits: load(STORAGE.habits, null),
   entries: load(STORAGE.entries, {}),
-  settings: load(STORAGE.settings, { theme: 'dark', bg: '', notifyEnabled: false, notifyEveryHours: 2, notifyStart: 9, notifyEnd: 22, notifyAsked: false, updateUrl: '', lastUpdateCheck: 0, lastUpdateResult: '', minimizeToTray: false, afkEnabled: true, afkTimeoutMin: 3, afkPassword: '', streakNotifyMilestone: true, streakNotifyAtRisk: true, streakAtRiskHour: 20 }),
+  settings: load(STORAGE.settings, { theme: 'dark', bg: '', language: 'en', graphType: 'line', combineHabits: false, notifyEnabled: false, notifyEveryHours: 2, notifyStart: 9, notifyEnd: 22, notifyAsked: false, updateUrl: '', lastUpdateCheck: 0, lastUpdateResult: '', minimizeToTray: false, afkEnabled: true, afkTimeoutMin: 3, afkPassword: '', streakNotifyMilestone: true, streakNotifyAtRisk: true, streakAtRiskHour: 20 }),
 };
 
 // Backfill new settings for existing users
-const _defaults = { notifyEnabled: false, notifyEveryHours: 2, notifyStart: 9, notifyEnd: 22, notifyAsked: false, updateUrl: '', lastUpdateCheck: 0, lastUpdateResult: '', minimizeToTray: false, afkEnabled: true, afkTimeoutMin: 3, afkPassword: '', streakNotifyMilestone: true, streakNotifyAtRisk: true, streakAtRiskHour: 20 };
+const _defaults = { language: 'en', graphType: 'line', combineHabits: false, notifyEnabled: false, notifyEveryHours: 2, notifyStart: 9, notifyEnd: 22, notifyAsked: false, updateUrl: '', lastUpdateCheck: 0, lastUpdateResult: '', minimizeToTray: false, afkEnabled: true, afkTimeoutMin: 3, afkPassword: '', streakNotifyMilestone: true, streakNotifyAtRisk: true, streakAtRiskHour: 20 };
 for (const k in _defaults) if (state.settings[k] === undefined) state.settings[k] = _defaults[k];
 // Sync tray preference to main process
 try { if (window.serene && window.serene.setTray) window.serene.setTray(!!state.settings.minimizeToTray); } catch (e) {}
@@ -134,18 +146,18 @@ function sidebar() {
   brand.appendChild(el('span', 'brand-name', 'Serene'));
   s.appendChild(brand);
   const items = [
-    ['today', '☀', 'Today'],
-    ['month', '⊞', 'Monthly Overview'],
-    ['graphs', '∿', 'Graphs'],
-    ['habits', '✓', 'Habits'],
-    ['settings', '⚙', 'Settings'],
-    ['patchnotes', '◈', 'Patch Notes'],
-    ['about', '❋', 'Serene'],
+    ['today', '☀', 'nav.today'],
+    ['month', '⊞', 'nav.month'],
+    ['graphs', '∿', 'nav.graphs'],
+    ['habits', '✓', 'nav.habits'],
+    ['settings', '⚙', 'nav.settings'],
+    ['patchnotes', '◈', 'nav.patchnotes'],
+    ['about', '❋', 'nav.about'],
   ];
-  items.forEach(([v, i, l]) => {
+  items.forEach(([v, i, key]) => {
     const b = el('button', 'nav-btn' + (state.view === v ? ' active' : ''));
     b.appendChild(el('span', 'ico', i));
-    b.appendChild(el('span', '', l));
+    b.appendChild(el('span', '', t(key)));
     b.onclick = () => { state.view = v; state.detailKey = null; render(); };
     s.appendChild(b);
   });
@@ -162,7 +174,7 @@ function viewToday() {
 
   const head = el('div', 'page-head');
   const l = el('div');
-  l.appendChild(el('h1', 'page-title', 'Today'));
+  l.appendChild(el('h1', 'page-title', t('today.title')));
   l.appendChild(el('div', 'page-sub', fmtLongDate(today)));
   head.appendChild(l);
   const streak = computeStreak();
@@ -184,19 +196,19 @@ function viewToday() {
   const grid = el('div', 'grid-2');
   // habits panel
   const habitsPanel = el('section', 'glass');
-  habitsPanel.appendChild(el('h3', 'panel-title', 'Daily Habits'));
+  habitsPanel.appendChild(el('h3', 'panel-title', t('today.habits')));
   const enabledPos = state.habits.positive.filter(h => h.enabled);
   const enabledNeg = state.habits.negative.filter(h => h.enabled);
 
   const posGroup = el('div', 'habit-group');
-  posGroup.appendChild(el('div', 'habit-group-label', 'Positive'));
-  if (enabledPos.length === 0) posGroup.appendChild(el('div', 'empty-state', 'No positive habits enabled. Add some in Habits.'));
+  posGroup.appendChild(el('div', 'habit-group-label', t('today.positive')));
+  if (enabledPos.length === 0) posGroup.appendChild(el('div', 'empty-state', t('today.noPos')));
   enabledPos.forEach(h => posGroup.appendChild(habitRow(h, entry, false)));
   habitsPanel.appendChild(posGroup);
 
   const negGroup = el('div', 'habit-group');
-  negGroup.appendChild(el('div', 'habit-group-label', 'Negative (avoid)'));
-  if (enabledNeg.length === 0) negGroup.appendChild(el('div', 'empty-state', 'No negative habits enabled.'));
+  negGroup.appendChild(el('div', 'habit-group-label', t('today.negative')));
+  if (enabledNeg.length === 0) negGroup.appendChild(el('div', 'empty-state', t('today.noNeg')));
   enabledNeg.forEach(h => negGroup.appendChild(habitRow(h, entry, true)));
   habitsPanel.appendChild(negGroup);
 
@@ -204,14 +216,14 @@ function viewToday() {
 
   // meters + submit panel
   const right = el('section', 'glass');
-  right.appendChild(el('h3', 'panel-title', 'How are you feeling?'));
+  right.appendChild(el('h3', 'panel-title', t('today.sub')));
 
-  const moodMeter = meter('Mood — How happy were you today?', entry.mood, (v) => { entry.mood = v; save(STORAGE.entries, state.entries); });
+  const moodMeter = meter(t('today.mood'), entry.mood, (v) => { entry.mood = v; save(STORAGE.entries, state.entries); });
   right.appendChild(moodMeter);
-  const mentalMeter = meter('Mental state — Clarity & calm', entry.mental, (v) => { entry.mental = v; save(STORAGE.entries, state.entries); });
+  const mentalMeter = meter(t('today.mental'), entry.mental, (v) => { entry.mental = v; save(STORAGE.entries, state.entries); });
   right.appendChild(mentalMeter);
 
-  const submitBtn = el('button', 'btn btn-primary btn-lg', entry.submitted ? 'Update Submitted Day →' : 'Submit Day');
+  const submitBtn = el('button', 'btn btn-primary btn-lg', t('today.submit'));
   submitBtn.onclick = () => {
     const wasSubmitted = entry.submitted;
     entry.submitted = true;
@@ -271,7 +283,7 @@ function habitRow(habit, entry, isNeg) {
     const c = el('div', 'check', checked ? '✓' : '');
     row.appendChild(c);
     row.appendChild(el('div', 'habit-name', habit.name));
-    if (habit.preset) row.appendChild(el('div', 'habit-badge', 'preset'));
+    if (habit.preset) row.appendChild(el('div', 'habit-badge', t('common.preset')));
     row.onclick = (e) => {
       e.preventDefault();
       entry.checked[habit.id] = !checked;
@@ -303,13 +315,13 @@ function viewMonth() {
   const md = state.monthDate;
   const head = el('div', 'page-head');
   const l = el('div');
-  l.appendChild(el('h1', 'page-title', 'Monthly Overview'));
-  l.appendChild(el('div', 'page-sub', 'Track patterns, celebrate wins, spot what to gently improve.'));
+  l.appendChild(el('h1', 'page-title', t('month.title')));
+  l.appendChild(el('div', 'page-sub', t('month.sub')));
   head.appendChild(l);
   const nav = el('div', 'row');
   const prev = el('button', 'btn btn-icon', '‹'); prev.onclick = () => { state.monthDate = new Date(md.getFullYear(), md.getMonth() - 1, 1); state.detailKey = null; render(); };
   const next = el('button', 'btn btn-icon', '›'); next.onclick = () => { state.monthDate = new Date(md.getFullYear(), md.getMonth() + 1, 1); state.detailKey = null; render(); };
-  const today = el('button', 'btn btn-icon', 'Today'); today.onclick = () => { state.monthDate = new Date(); state.detailKey = null; render(); };
+  const today = el('button', 'btn btn-icon', t('month.todayBtn')); today.onclick = () => { state.monthDate = new Date(); state.detailKey = null; render(); };
   const title = el('div', 'cal-title', monthName(md));
   nav.appendChild(prev); nav.appendChild(title); nav.appendChild(next); nav.appendChild(today);
   head.appendChild(nav);
@@ -397,7 +409,7 @@ function summarize(entry) {
 // -------- ANALYSIS --------
 function analysisPanel(md) {
   const panel = el('section', 'glass');
-  panel.appendChild(el('h3', 'panel-title', 'Monthly Analysis'));
+  panel.appendChild(el('h3', 'panel-title', t('month.analysis')));
 
   const y = md.getFullYear(), m = md.getMonth();
   const daysInMonth = new Date(y, m + 1, 0).getDate();
@@ -409,7 +421,7 @@ function analysisPanel(md) {
   }
 
   if (days.length === 0) {
-    panel.appendChild(el('div', 'empty-state', 'No submitted days this month yet. Submit a day from the Today view to unlock analysis.'));
+    panel.appendChild(el('div', 'empty-state', t('month.noData')));
     return panel;
   }
 
@@ -419,7 +431,7 @@ function analysisPanel(md) {
   const worst = [...days].sort((a, b) => (a.mood + a.mental) - (b.mood + b.mental))[0];
 
   const stats = el('div', 'stat-grid');
-  stats.appendChild(statBox('Logged Days', days.length, `of ${daysInMonth}`));
+  stats.appendChild(statBox(t('month.loggedDays'), days.length, `${t('month.of')} ${daysInMonth}`));
   stats.appendChild(statBox('Avg Mood', avgMood.toFixed(1), '/ 10'));
   stats.appendChild(statBox('Avg Mental', avgMental.toFixed(1), '/ 10'));
   stats.appendChild(statBox('Best Day', String(parseKey(best.date).getDate()), fmtLongDate(parseKey(best.date))));
@@ -706,78 +718,206 @@ function dayDetailModal(key) {
 }
 
 // -------- GRAPHS --------
+function monthPickerControl(md, onChange) {
+  const wrap = el('div', 'month-picker');
+  wrap.appendChild(el('span', 'muted', t('graphs.monthPicker')));
+  const monthSel = document.createElement('select');
+  monthSel.className = 'month-select';
+  for (let i = 0; i < 12; i++) {
+    const o = document.createElement('option');
+    o.value = i;
+    o.textContent = new Date(2000, i, 1).toLocaleDateString(localeTag(), { month: 'long' });
+    if (i === md.getMonth()) o.selected = true;
+    monthSel.appendChild(o);
+  }
+  const yearSel = document.createElement('select');
+  yearSel.className = 'month-select';
+  const thisYear = new Date().getFullYear();
+  for (let y = thisYear - 8; y <= thisYear + 1; y++) {
+    const o = document.createElement('option');
+    o.value = y;
+    o.textContent = String(y);
+    if (y === md.getFullYear()) o.selected = true;
+    yearSel.appendChild(o);
+  }
+  const commit = () => onChange(new Date(Number(yearSel.value), Number(monthSel.value), 1));
+  monthSel.onchange = commit;
+  yearSel.onchange = commit;
+  wrap.appendChild(monthSel);
+  wrap.appendChild(yearSel);
+  return wrap;
+}
+
+function donutChart(label, value, max, color, sub) {
+  const v = Math.max(0, Math.min(max, Number(value) || 0));
+  const pct = max ? (v / max) : 0;
+  const size = 160;
+  const stroke = 14;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const dash = pct * c;
+  const wrap = el('div', 'donut-card');
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+  svg.setAttribute('class', 'donut-svg');
+  const bg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  bg.setAttribute('cx', size / 2); bg.setAttribute('cy', size / 2); bg.setAttribute('r', r);
+  bg.setAttribute('fill', 'none'); bg.setAttribute('stroke', 'var(--glass-border)'); bg.setAttribute('stroke-width', stroke);
+  const fg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  fg.setAttribute('cx', size / 2); fg.setAttribute('cy', size / 2); fg.setAttribute('r', r);
+  fg.setAttribute('fill', 'none'); fg.setAttribute('stroke', color); fg.setAttribute('stroke-width', stroke);
+  fg.setAttribute('stroke-linecap', 'round');
+  fg.setAttribute('stroke-dasharray', `${dash} ${c - dash}`);
+  fg.setAttribute('transform', `rotate(-90 ${size / 2} ${size / 2})`);
+  svg.appendChild(bg); svg.appendChild(fg);
+  const center = el('div', 'donut-center');
+  center.appendChild(el('div', 'donut-value', max === 100 ? Math.round(v) + '%' : v.toFixed(1)));
+  center.appendChild(el('div', 'donut-sub', sub || ''));
+  const ring = el('div', 'donut-ring');
+  ring.appendChild(svg);
+  ring.appendChild(center);
+  wrap.appendChild(ring);
+  wrap.appendChild(el('div', 'donut-label', label));
+  return wrap;
+}
+
+function habitPalette(i, neg) {
+  const pos = ['#5ec8a0', '#6aa8ff', '#b48cff', '#f0c35a', '#7ad4d4', '#9ad27a', '#ff9f7a', '#8ab4f8'];
+  const bad = ['#ff6f8a', '#ff8f6b', '#e05a7a', '#d97757', '#c45c7a', '#f07178'];
+  const arr = neg ? bad : pos;
+  return arr[i % arr.length];
+}
+
 function viewGraphs() {
   const wrap = document.createDocumentFragment();
   const md = state.monthDate;
   const y = md.getFullYear(), m = md.getMonth();
   const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const chartType = state.settings.graphType === 'circle' ? 'circle' : 'line';
+  const combine = !!state.settings.combineHabits;
 
   const head = el('div', 'page-head');
   const l = el('div');
-  l.appendChild(el('h1', 'page-title', 'Graphs'));
-  l.appendChild(el('div', 'page-sub', 'Big, smooth trends across the month.'));
+  l.appendChild(el('h1', 'page-title', t('graphs.title')));
+  l.appendChild(el('div', 'page-sub', t('graphs.sub')));
   head.appendChild(l);
-  const nav = el('div', 'row');
+  const nav = el('div', 'row wrap graphs-toolbar');
   const prev = el('button', 'btn btn-icon', '‹'); prev.onclick = () => { state.monthDate = new Date(y, m - 1, 1); render(); };
   const next = el('button', 'btn btn-icon', '›'); next.onclick = () => { state.monthDate = new Date(y, m + 1, 1); render(); };
-  const today = el('button', 'btn btn-icon', 'Today'); today.onclick = () => { state.monthDate = new Date(); render(); };
+  const today = el('button', 'btn btn-icon', t('month.todayBtn')); today.onclick = () => { state.monthDate = new Date(); render(); };
   const title = el('div', 'cal-title', monthName(md));
   nav.appendChild(prev); nav.appendChild(title); nav.appendChild(next); nav.appendChild(today);
+  nav.appendChild(monthPickerControl(md, (d) => { state.monthDate = d; render(); }));
+
+  const typeGroup = el('div', 'chip-group');
+  [['line', t('graphs.line')], ['circle', t('graphs.circle')]].forEach(([val, label]) => {
+    const c = el('div', 'chip' + (chartType === val ? ' active' : ''), label);
+    c.onclick = () => { state.settings.graphType = val; save(STORAGE.settings, state.settings); render(); };
+    typeGroup.appendChild(c);
+  });
+  nav.appendChild(typeGroup);
+
+  const combineChip = el('div', 'chip' + (combine ? ' active' : ''), t('graphs.combine'));
+  combineChip.title = t('graphs.combineHint');
+  combineChip.onclick = () => { state.settings.combineHabits = !combine; save(STORAGE.settings, state.settings); render(); };
+  nav.appendChild(combineChip);
+
   head.appendChild(nav);
   wrap.appendChild(head);
 
-  // Any data this month?
   let hasAny = false;
+  const days = [];
   for (let d = 1; d <= daysInMonth; d++) {
     const e = state.entries[todayKey(new Date(y, m, d))];
-    if (e && e.submitted) { hasAny = true; break; }
+    if (e && e.submitted) { hasAny = true; days.push(e); }
   }
   if (!hasAny) {
     const empty = el('section', 'glass');
-    empty.appendChild(el('div', 'empty-state', 'No submitted days this month yet. Submit a day from the Today view to see the graphs come alive.'));
+    empty.appendChild(el('div', 'empty-state', t('graphs.noData')));
     wrap.appendChild(empty);
     return wrap;
   }
 
   const posHabits = state.habits.positive.filter(h => h.enabled);
   const negHabits = state.habits.negative.filter(h => h.enabled);
-
   const pct = (v) => Math.round(v) + '%';
   const posRate = (e) => posHabits.length ? (posHabits.filter(h => e.checked[h.id]).length / posHabits.length) * 100 : null;
   const negRate = (e) => negHabits.length ? (negHabits.filter(h => e.checked[h.id]).length / negHabits.length) * 100 : null;
 
-  // Mood + Mental (theme colors)
+  const avgMood = days.reduce((a, b) => a + (Number(b.mood) || 0), 0) / days.length;
+  const avgMental = days.reduce((a, b) => a + (Number(b.mental) || 0), 0) / days.length;
+  let posHits = 0, posTotal = 0, negHits = 0, negTotal = 0;
+  days.forEach((e) => {
+    posHabits.forEach((h) => { posTotal += 1; if (e.checked && e.checked[h.id]) posHits += 1; });
+    negHabits.forEach((h) => { negTotal += 1; if (e.checked && e.checked[h.id]) negHits += 1; });
+  });
+  const posPct = posTotal ? (posHits / posTotal) * 100 : 0;
+  const negPct = negTotal ? (negHits / negTotal) * 100 : 0;
+
+  if (chartType === 'circle') {
+    const p = el('section', 'glass');
+    p.appendChild(el('h3', 'panel-title', monthName(md)));
+    const grid = el('div', 'donut-grid');
+    grid.appendChild(donutChart(t('graphs.donutMood'), avgMood, 10, 'var(--accent)', `${t('graphs.avg')} / 10`));
+    grid.appendChild(donutChart(t('graphs.donutMental'), avgMental, 10, 'var(--accent-2)', `${t('graphs.avg')} / 10`));
+    grid.appendChild(donutChart(t('graphs.donutPos'), posPct, 100, 'var(--good)', t('graphs.completion')));
+    grid.appendChild(donutChart(t('graphs.donutNeg'), negPct, 100, 'var(--bad)', t('graphs.slipRate')));
+    p.appendChild(grid);
+    wrap.appendChild(p);
+    return wrap;
+  }
+
   const p1 = el('section', 'glass');
-  p1.appendChild(el('h3', 'panel-title', 'Mood & Mental State'));
+  p1.appendChild(el('h3', 'panel-title', t('graphs.moodMental')));
   p1.appendChild(lineChart(y, m, daysInMonth, [
-    { key: 'mood', label: 'Mood', color: 'var(--accent)' },
-    { key: 'mental', label: 'Mental', color: 'var(--accent-2)' },
+    { key: 'mood', label: t('graphs.donutMood'), color: 'var(--accent)' },
+    { key: 'mental', label: t('graphs.donutMental'), color: 'var(--accent-2)' },
   ], { big: true, max: 10 }));
   wrap.appendChild(p1);
 
-  // Good habits — green
-  const p2 = el('section', 'glass');
-  p2.appendChild(el('h3', 'panel-title', 'Good Habits — daily completion'));
-  if (posHabits.length === 0) {
-    p2.appendChild(el('div', 'empty-state', 'No positive habits enabled. Add some in Habits.'));
+  if (combine) {
+    const all = [
+      ...posHabits.map((h, i) => ({ h, neg: false, i })),
+      ...negHabits.map((h, i) => ({ h, neg: true, i })),
+    ];
+    const pC = el('section', 'glass');
+    pC.appendChild(el('h3', 'panel-title', t('graphs.combinedTitle')));
+    if (all.length === 0) {
+      pC.appendChild(el('div', 'empty-state', t('graphs.noPos')));
+    } else {
+      const series = all.map(({ h, neg, i }) => ({
+        key: 'h_' + h.id,
+        label: h.name,
+        color: habitPalette(i, neg),
+        compute: (e) => (e.checked && e.checked[h.id]) ? 100 : 0,
+        tipFmt: pct,
+      }));
+      pC.appendChild(lineChart(y, m, daysInMonth, series, { big: true, max: 100, yFmt: (v) => v + '%' }));
+    }
+    wrap.appendChild(pC);
   } else {
-    p2.appendChild(lineChart(y, m, daysInMonth, [
-      { key: 'posRate', label: 'Positive habits done', color: 'var(--good)', compute: posRate, tipFmt: pct },
-    ], { big: true, max: 100, yFmt: (v) => v + '%' }));
-  }
-  wrap.appendChild(p2);
+    const p2 = el('section', 'glass');
+    p2.appendChild(el('h3', 'panel-title', t('graphs.goodHabits')));
+    if (posHabits.length === 0) {
+      p2.appendChild(el('div', 'empty-state', t('graphs.noPos')));
+    } else {
+      p2.appendChild(lineChart(y, m, daysInMonth, [
+        { key: 'posRate', label: t('graphs.donutPos'), color: 'var(--good)', compute: posRate, tipFmt: pct },
+      ], { big: true, max: 100, yFmt: (v) => v + '%' }));
+    }
+    wrap.appendChild(p2);
 
-  // Bad habits — red
-  const p3 = el('section', 'glass');
-  p3.appendChild(el('h3', 'panel-title', 'Bad Habits — daily slip rate'));
-  if (negHabits.length === 0) {
-    p3.appendChild(el('div', 'empty-state', 'No negative habits enabled.'));
-  } else {
-    p3.appendChild(lineChart(y, m, daysInMonth, [
-      { key: 'negRate', label: 'Negative habits done', color: 'var(--bad)', compute: negRate, tipFmt: pct },
-    ], { big: true, max: 100, yFmt: (v) => v + '%' }));
+    const p3 = el('section', 'glass');
+    p3.appendChild(el('h3', 'panel-title', t('graphs.badHabits')));
+    if (negHabits.length === 0) {
+      p3.appendChild(el('div', 'empty-state', t('graphs.noNeg')));
+    } else {
+      p3.appendChild(lineChart(y, m, daysInMonth, [
+        { key: 'negRate', label: t('graphs.donutNeg'), color: 'var(--bad)', compute: negRate, tipFmt: pct },
+      ], { big: true, max: 100, yFmt: (v) => v + '%' }));
+    }
+    wrap.appendChild(p3);
   }
-  wrap.appendChild(p3);
 
   return wrap;
 }
@@ -787,8 +927,8 @@ function viewAbout() {
   const wrap = document.createDocumentFragment();
   const head = el('div', 'page-head');
   const l = el('div');
-  l.appendChild(el('h1', 'page-title', 'Serene'));
-  l.appendChild(el('div', 'page-sub', 'A quiet space for looking after yourself.'));
+  l.appendChild(el('h1', 'page-title', t('about.title')));
+  l.appendChild(el('div', 'page-sub', t('about.sub')));
   head.appendChild(l);
   wrap.appendChild(head);
 
@@ -849,6 +989,12 @@ function viewAbout() {
 
 // -------- PATCH NOTES --------
 const PATCH_NOTES = [
+  { v: '1.1.14', date: '2026', notes: [
+    'Fixed backup import so habit checkmarks and custom habits survive merge and replace — habit IDs are preserved and daily checks are deep-merged.',
+    'Export now uses backup format v2, flushes data before saving, and confirms how many habits and days were included.',
+    'Added languages: English (default), Dutch, French, German, Italian, Russian, Spanish and Romanian — pick one in Settings.',
+    'Graphs: jump to any past month with the month/year picker, switch between line and donut charts, and optionally combine every habit on one shared chart.',
+  ]},
   { v: '1.1.13', date: '2026', notes: [
     'Serene now uses a strict single-instance lock: opening it again focuses the already-running window instead of starting a second copy.',
     'Rebuilt the Windows executable and installer with the Serene lotus icon applied to the app, taskbar and shortcuts.',
@@ -917,8 +1063,8 @@ function viewPatchNotes() {
   const wrap = document.createDocumentFragment();
   const head = el('div', 'page-head');
   const l = el('div');
-  l.appendChild(el('h1', 'page-title', 'Patch Notes'));
-  l.appendChild(el('div', 'page-sub', 'Every update, in plain words.'));
+  l.appendChild(el('h1', 'page-title', t('patch.title')));
+  l.appendChild(el('div', 'page-sub', t('patch.sub')));
   head.appendChild(l);
   wrap.appendChild(head);
 
@@ -944,14 +1090,14 @@ function viewHabits() {
   const wrap = document.createDocumentFragment();
   const head = el('div', 'page-head');
   const l = el('div');
-  l.appendChild(el('h1', 'page-title', 'Habits'));
-  l.appendChild(el('div', 'page-sub', 'Curate what you want to track. Enable, disable, add or remove any habit.'));
+  l.appendChild(el('h1', 'page-title', t('habits.title')));
+  l.appendChild(el('div', 'page-sub', t('habits.sub')));
   head.appendChild(l);
   wrap.appendChild(head);
 
   const grid = el('div', 'grid-2');
-  grid.appendChild(habitListPanel('positive', 'Positive Habits', PRESETS_POS));
-  grid.appendChild(habitListPanel('negative', 'Negative Habits', PRESETS_NEG));
+  grid.appendChild(habitListPanel('positive', t('habits.positive'), PRESETS_POS));
+  grid.appendChild(habitListPanel('negative', t('habits.negative'), PRESETS_NEG));
   wrap.appendChild(grid);
   return wrap;
 }
@@ -966,7 +1112,7 @@ function habitListPanel(kind, title, presets) {
     c.onclick = (e) => { e.stopPropagation(); h.enabled = !h.enabled; save(STORAGE.habits, state.habits); render(); };
     row.appendChild(c);
     row.appendChild(el('div', 'habit-name', h.name));
-    if (h.preset) row.appendChild(el('div', 'habit-badge', 'preset'));
+    if (h.preset) row.appendChild(el('div', 'habit-badge', t('common.preset')));
     const del = el('button', 'btn btn-icon btn-danger', '✕');
     del.onclick = (e) => { e.stopPropagation(); state.habits[kind] = list.filter(x => x.id !== h.id); save(STORAGE.habits, state.habits); render(); };
     row.appendChild(del);
@@ -976,8 +1122,8 @@ function habitListPanel(kind, title, presets) {
 
   // Add custom
   const addRow = el('div', 'row'); addRow.style.marginTop = '14px';
-  const input = document.createElement('input'); input.type = 'text'; input.placeholder = 'Add a custom ' + (kind === 'positive' ? 'positive' : 'negative') + ' habit…';
-  const add = el('button', 'btn btn-primary', 'Add');
+  const input = document.createElement('input'); input.type = 'text'; input.placeholder = t('habits.addPlaceholder');
+  const add = el('button', 'btn btn-primary', t('habits.add'));
   add.onclick = () => {
     const v = input.value.trim(); if (!v) return;
     state.habits[kind].push({ id: uid(), name: v, enabled: true, preset: false });
@@ -991,10 +1137,11 @@ function habitListPanel(kind, title, presets) {
   const existing = new Set(list.map(h => h.name));
   const missing = presets.filter(p => !existing.has(p.name));
   if (missing.length) {
-    panel.appendChild(el('div', 'panel-title', 'Add preset'));
+    panel.appendChild(el('div', 'panel-title', t('habits.addPreset')));
     const wrap = el('div', 'row wrap');
     missing.forEach(p => {
-      const b = el('button', 'btn btn-icon', '+ ' + p.name);
+      const label = p.labelKey ? t(p.labelKey) : p.name;
+      const b = el('button', 'btn btn-icon', '+ ' + label);
       b.onclick = () => {
         state.habits[kind].push({ id: uid(), name: p.name, enabled: true, preset: true });
         save(STORAGE.habits, state.habits); render();
@@ -1011,20 +1158,47 @@ function viewSettings() {
   const wrap = document.createDocumentFragment();
   const head = el('div', 'page-head');
   const l = el('div');
-  l.appendChild(el('h1', 'page-title', 'Settings'));
-  l.appendChild(el('div', 'page-sub', 'Personalize the atmosphere.'));
+  l.appendChild(el('h1', 'page-title', t('settings.title')));
+  l.appendChild(el('div', 'page-sub', t('settings.sub')));
   head.appendChild(l);
   wrap.appendChild(head);
 
   const panel = el('section', 'glass');
+  // language
+  const langRow = el('div', 'setting-row');
+  const ll = el('div', 'setting-label'); ll.appendChild(el('b', '', t('settings.language'))); ll.appendChild(el('span', '', t('settings.languageHint')));
+  langRow.appendChild(ll);
+  const langSel = document.createElement('select');
+  langSel.className = 'month-select';
+  const langs = (window.SereneI18n && window.SereneI18n.languages) || [{ code: 'en', label: 'English' }];
+  langs.forEach((lang) => {
+    const o = document.createElement('option');
+    o.value = lang.code;
+    o.textContent = lang.label;
+    if ((state.settings.language || 'en') === lang.code) o.selected = true;
+    langSel.appendChild(o);
+  });
+  langSel.onchange = () => {
+    state.settings.language = langSel.value;
+    save(STORAGE.settings, state.settings);
+    document.documentElement.lang = langSel.value;
+    render();
+  };
+  langRow.appendChild(langSel);
+  panel.appendChild(langRow);
+
   // theme
   const themeRow = el('div', 'setting-row');
-  const tl = el('div', 'setting-label'); tl.appendChild(el('b', '', 'Theme')); tl.appendChild(el('span', '', 'Choose the color mode of the app.'));
+  const tl = el('div', 'setting-label'); tl.appendChild(el('b', '', t('settings.theme'))); tl.appendChild(el('span', '', t('settings.themeHint')));
   themeRow.appendChild(tl);
   const chips = el('div', 'chip-group');
-  ['dark', 'light', 'system'].forEach(t => {
-    const c = el('div', 'chip' + (state.settings.theme === t ? ' active' : ''), t[0].toUpperCase() + t.slice(1));
-    c.onclick = () => { state.settings.theme = t; save(STORAGE.settings, state.settings); render(); };
+  [
+    ['dark', t('settings.dark')],
+    ['light', t('settings.light')],
+    ['system', t('settings.system')],
+  ].forEach(([val, label]) => {
+    const c = el('div', 'chip' + (state.settings.theme === val ? ' active' : ''), label);
+    c.onclick = () => { state.settings.theme = val; save(STORAGE.settings, state.settings); render(); };
     chips.appendChild(c);
   });
   themeRow.appendChild(chips);
@@ -1032,7 +1206,7 @@ function viewSettings() {
 
   // background
   const bgRow = el('div', 'setting-row');
-  const bl = el('div', 'setting-label'); bl.appendChild(el('b', '', 'Custom background image')); bl.appendChild(el('span', '', 'Choose an image to set the mood. It will be tinted for readability.'));
+  const bl = el('div', 'setting-label'); bl.appendChild(el('b', '', t('settings.bg'))); bl.appendChild(el('span', '', t('settings.bgHint')));
   bgRow.appendChild(bl);
   const bgActions = el('div', 'row');
   const file = document.createElement('input'); file.type = 'file'; file.accept = 'image/*'; file.style.display = 'none';
@@ -1042,8 +1216,8 @@ function viewSettings() {
     r.onload = () => { state.settings.bg = r.result; save(STORAGE.settings, state.settings); render(); };
     r.readAsDataURL(f);
   };
-  const pick = el('button', 'btn btn-primary', 'Choose image…'); pick.onclick = () => file.click();
-  const clear = el('button', 'btn', 'Clear'); clear.onclick = () => { state.settings.bg = ''; save(STORAGE.settings, state.settings); render(); };
+  const pick = el('button', 'btn btn-primary', t('settings.chooseImage')); pick.onclick = () => file.click();
+  const clear = el('button', 'btn', t('settings.clear')); clear.onclick = () => { state.settings.bg = ''; save(STORAGE.settings, state.settings); render(); };
   bgActions.appendChild(pick); bgActions.appendChild(clear); bgActions.appendChild(file);
   bgRow.appendChild(bgActions);
   panel.appendChild(bgRow);
@@ -1069,7 +1243,7 @@ function viewSettings() {
     render();
   };
   nActs.appendChild(tgl);
-  nActs.appendChild(el('span', 'muted', state.settings.notifyEnabled ? 'On' : 'Off'));
+  nActs.appendChild(el('span', 'muted', state.settings.notifyEnabled ? t('settings.on') : t('settings.off')));
   nRow.appendChild(nActs);
   panel.appendChild(nRow);
 
@@ -1165,7 +1339,7 @@ function viewSettings() {
     render();
   };
   wActs.appendChild(wtgl);
-  wActs.appendChild(el('span', 'muted', state.settings.minimizeToTray ? 'On' : 'Off'));
+  wActs.appendChild(el('span', 'muted', state.settings.minimizeToTray ? t('settings.on') : t('settings.off')));
   wRow.appendChild(wActs);
   panel.appendChild(wRow);
 
@@ -1188,7 +1362,7 @@ function viewSettings() {
     render();
   };
   aActs.appendChild(atgl);
-  aActs.appendChild(el('span', 'muted', state.settings.afkEnabled ? 'On' : 'Off'));
+  aActs.appendChild(el('span', 'muted', state.settings.afkEnabled ? t('settings.on') : t('settings.off')));
   aRow.appendChild(aActs);
   panel.appendChild(aRow);
 
@@ -1238,14 +1412,28 @@ function viewSettings() {
 
   // data
   const dataRow = el('div', 'setting-row');
-  const dl = el('div', 'setting-label'); dl.appendChild(el('b', '', 'Your data')); dl.appendChild(el('span', '', 'Everything is stored locally on this device. Export a backup or import from one.'));
+  const dl = el('div', 'setting-label'); dl.appendChild(el('b', '', t('settings.data'))); dl.appendChild(el('span', '', t('settings.dataHint')));
   dataRow.appendChild(dl);
   const dActs = el('div', 'row wrap');
-  const exp = el('button', 'btn', 'Export backup'); exp.onclick = () => {
-    const blob = new Blob([JSON.stringify({ v: 1, exportedAt: new Date().toISOString(), habits: state.habits, entries: state.entries, settings: state.settings }, null, 2)], { type: 'application/json' });
+  const exp = el('button', 'btn', t('settings.export')); exp.onclick = () => {
+    save(STORAGE.habits, state.habits);
+    save(STORAGE.entries, state.entries);
+    save(STORAGE.settings, state.settings);
+    const posN = (state.habits.positive || []).length;
+    const negN = (state.habits.negative || []).length;
+    const dayN = Object.keys(state.entries || {}).length;
+    const payload = {
+      v: 2,
+      exportedAt: new Date().toISOString(),
+      habits: state.habits,
+      entries: state.entries,
+      settings: state.settings,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = `serene-backup-${todayKey()}.json`; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast(t('backup.exportedTitle'), t('backup.exportedBody', { habits: posN + negN, days: dayN }));
   };
   const impFile = document.createElement('input'); impFile.type = 'file'; impFile.accept = 'application/json,.json'; impFile.style.display = 'none';
   impFile.onchange = () => {
@@ -1254,21 +1442,24 @@ function viewSettings() {
     r.onload = () => {
       try {
         const data = JSON.parse(r.result);
-        if (!data || typeof data !== 'object') throw new Error('Invalid file');
-        const mode = confirm('OK = MERGE imported data with existing data.\nCancel = REPLACE all existing data with the import.');
-        importData(data, mode ? 'merge' : 'replace');
-        alert('Import complete.');
+        if (!data || typeof data !== 'object') throw new Error(t('backup.invalidFile'));
+        const mode = confirm(t('backup.importMode'));
+        const result = importData(data, mode ? 'merge' : 'replace');
+        if (result && result.orphanChecks) {
+          alert(t('backup.orphanWarn', { count: result.orphanChecks }));
+        }
+        alert(t('backup.importComplete'));
         render();
       } catch (e) {
-        alert('Could not import: ' + (e && e.message ? e.message : 'invalid file'));
+        alert(t('backup.importFailed', { error: (e && e.message) ? e.message : t('backup.invalidFile') }));
       }
       impFile.value = '';
     };
     r.readAsText(f);
   };
-  const imp = el('button', 'btn', 'Import backup'); imp.onclick = () => impFile.click();
-  const reset = el('button', 'btn btn-danger', 'Reset all data'); reset.onclick = () => {
-    if (!confirm('This will erase all habits and daily logs. Continue?')) return;
+  const imp = el('button', 'btn', t('settings.import')); imp.onclick = () => impFile.click();
+  const reset = el('button', 'btn btn-danger', t('settings.reset')); reset.onclick = () => {
+    if (!confirm(t('settings.resetConfirm'))) return;
     localStorage.removeItem(STORAGE.habits); localStorage.removeItem(STORAGE.entries);
     location.reload();
   };
@@ -1310,7 +1501,7 @@ function viewSettings() {
   return wrap;
 }
 
-const APP_VERSION = '1.1.13';
+const APP_VERSION = '1.1.14';
 const fmtHr = (h) => { const n = ((h % 24) + 24) % 24; const s = n < 12 ? 'AM' : 'PM'; const hh = ((n + 11) % 12) + 1; return `${hh} ${s}`; };
 
 async function ensureNotifyPermission() {
@@ -1461,33 +1652,133 @@ function cmpVer(a, b) {
   return 0;
 }
 
+function normalizeHabit(h) {
+  if (!h || typeof h !== 'object') return null;
+  return {
+    id: h.id || uid(),
+    name: String(h.name || '').trim() || 'Habit',
+    enabled: h.enabled !== false,
+    preset: !!h.preset,
+  };
+}
+
+function mergeHabitLists(current, incoming) {
+  const cur = Array.isArray(current) ? current.map(normalizeHabit).filter(Boolean) : [];
+  const byId = new Map(cur.map(h => [h.id, h]));
+  const byName = new Map(cur.map(h => [h.name.toLowerCase(), h]));
+  const idMap = {}; // importedId -> localId
+
+  (Array.isArray(incoming) ? incoming : []).forEach((raw) => {
+    const h = normalizeHabit(raw);
+    if (!h) return;
+    const importedId = raw.id || h.id;
+    let existing = byId.get(importedId) || byName.get(h.name.toLowerCase());
+    if (existing) {
+      idMap[importedId] = existing.id;
+      existing.name = h.name || existing.name;
+      if (typeof raw.enabled === 'boolean') existing.enabled = raw.enabled;
+      if (typeof raw.preset === 'boolean') existing.preset = raw.preset;
+    } else {
+      // Preserve imported id so entry.checked keys keep working
+      const kept = { ...h, id: importedId };
+      cur.push(kept);
+      byId.set(kept.id, kept);
+      byName.set(kept.name.toLowerCase(), kept);
+      idMap[importedId] = kept.id;
+    }
+  });
+  return { list: cur, idMap };
+}
+
+function remapChecked(checked, idMap) {
+  const src = (checked && typeof checked === 'object') ? checked : {};
+  const out = {};
+  Object.keys(src).forEach((id) => {
+    const mapped = idMap[id] || id;
+    out[mapped] = !!src[id];
+  });
+  return out;
+}
+
+function mergeEntry(local, incoming, idMap) {
+  if (!incoming || typeof incoming !== 'object') return local;
+  if (!local) {
+    return {
+      date: incoming.date,
+      checked: remapChecked(incoming.checked, idMap),
+      mood: incoming.mood,
+      mental: incoming.mental,
+      submitted: !!incoming.submitted,
+      note: typeof incoming.note === 'string' ? incoming.note : '',
+    };
+  }
+  const mergedChecked = Object.assign({}, local.checked || {}, remapChecked(incoming.checked, idMap));
+  const preferIncoming = !!incoming.submitted && !local.submitted;
+  return {
+    date: local.date || incoming.date,
+    checked: mergedChecked,
+    mood: preferIncoming || (incoming.mood != null && local.mood == null) ? incoming.mood : (local.mood != null ? local.mood : incoming.mood),
+    mental: preferIncoming || (incoming.mental != null && local.mental == null) ? incoming.mental : (local.mental != null ? local.mental : incoming.mental),
+    submitted: !!(local.submitted || incoming.submitted),
+    note: (typeof local.note === 'string' && local.note.length >= (incoming.note || '').length)
+      ? local.note
+      : (typeof incoming.note === 'string' ? incoming.note : (local.note || '')),
+  };
+}
+
+function countOrphanChecks(habits, entries) {
+  const ids = new Set([
+    ...(habits.positive || []).map(h => h.id),
+    ...(habits.negative || []).map(h => h.id),
+  ]);
+  let orphan = 0;
+  Object.values(entries || {}).forEach((e) => {
+    if (!e || !e.checked) return;
+    Object.keys(e.checked).forEach((id) => {
+      if (e.checked[id] && !ids.has(id)) orphan += 1;
+    });
+  });
+  return orphan;
+}
+
 function importData(data, mode) {
+  const idMap = {};
   if (mode === 'replace') {
-    if (data.habits && data.habits.positive && data.habits.negative) state.habits = data.habits;
-    if (data.entries && typeof data.entries === 'object') state.entries = data.entries;
+    if (data.habits && data.habits.positive && data.habits.negative) {
+      state.habits = {
+        positive: (data.habits.positive || []).map(normalizeHabit).filter(Boolean),
+        negative: (data.habits.negative || []).map(normalizeHabit).filter(Boolean),
+      };
+    }
+    if (data.entries && typeof data.entries === 'object') {
+      const next = {};
+      for (const k in data.entries) next[k] = mergeEntry(null, data.entries[k], {});
+      state.entries = next;
+    }
     if (data.settings && typeof data.settings === 'object') {
-      // preserve current update url + theme choice unless explicitly present
       state.settings = Object.assign({}, state.settings, data.settings);
     }
   } else {
-    // merge
     if (data.habits) {
-      ['positive','negative'].forEach(k => {
-        const cur = state.habits[k] || [];
-        const names = new Set(cur.map(h => h.name));
-        (data.habits[k] || []).forEach(h => { if (!names.has(h.name)) cur.push({ ...h, id: uid() }); });
-        state.habits[k] = cur;
+      ['positive', 'negative'].forEach((k) => {
+        const { list, idMap: map } = mergeHabitLists(state.habits[k], data.habits[k]);
+        state.habits[k] = list;
+        Object.assign(idMap, map);
       });
     }
-    if (data.entries) {
+    if (data.entries && typeof data.entries === 'object') {
       for (const k in data.entries) {
-        if (!state.entries[k]) state.entries[k] = data.entries[k];
+        state.entries[k] = mergeEntry(state.entries[k], data.entries[k], idMap);
       }
+    }
+    if (data.settings && typeof data.settings === 'object') {
+      state.settings = Object.assign({}, state.settings, data.settings);
     }
   }
   save(STORAGE.habits, state.habits);
   save(STORAGE.entries, state.entries);
   save(STORAGE.settings, state.settings);
+  return { orphanChecks: countOrphanChecks(state.habits, state.entries) };
 }
 
 // First-launch notification prompt
@@ -1746,6 +2037,7 @@ function spawnTrail(x, y) {
   setTimeout(() => dot.remove(), 700);
 }
 
+try { document.documentElement.lang = state.settings.language || 'en'; } catch (e) {}
 render();
 scheduleNotifications();
 maybePromptNotifications();
