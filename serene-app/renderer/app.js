@@ -5,6 +5,7 @@ const STORAGE = {
   habits: 'serene.habits.v1',
   entries: 'serene.entries.v1',
   settings: 'serene.settings.v1',
+  goals: 'serene.goals.v1',
 };
 
 const PRESETS_POS = [
@@ -102,20 +103,28 @@ const monthName = (d) => d.toLocaleDateString(localeTag(), { month: 'long', year
 
 // State
 let state = {
-  view: 'today',        // today | month | habits | settings
+  view: 'today',        // today | month | graphs | habits | goals | settings
   monthDate: new Date(),
   detailKey: null,
+  goalDraft: null,
   habits: load(STORAGE.habits, null),
   entries: load(STORAGE.entries, {}),
-  settings: load(STORAGE.settings, { theme: 'dark', bg: '', language: 'en', graphType: 'line', combineHabits: false, notifyEnabled: false, notifyEveryHours: 2, notifyStart: 9, notifyEnd: 22, notifyAsked: false, updateUrl: '', lastUpdateCheck: 0, lastUpdateResult: '', minimizeToTray: false, afkEnabled: true, afkTimeoutMin: 3, afkPassword: '', streakNotifyMilestone: true, streakNotifyAtRisk: true, streakAtRiskHour: 20 }),
+  goals: load(STORAGE.goals, []),
+  settings: load(STORAGE.settings, { theme: 'dark', bg: '', language: 'en', graphType: 'line', goalsGraphType: 'line', combineHabits: false, notifyEnabled: false, notifyEveryHours: 2, notifyStart: 9, notifyEnd: 22, notifyAsked: false, updateUrl: '', lastUpdateCheck: 0, lastUpdateResult: '', minimizeToTray: false, afkEnabled: true, afkTimeoutMin: 3, afkPassword: '', afkPin: '', afkUnlockMode: 'slide', streakNotifyMilestone: true, streakNotifyAtRisk: true, streakAtRiskHour: 20 }),
 };
 
 // Backfill new settings for existing users
-const _defaults = { language: 'en', graphType: 'line', combineHabits: false, notifyEnabled: false, notifyEveryHours: 2, notifyStart: 9, notifyEnd: 22, notifyAsked: false, updateUrl: '', lastUpdateCheck: 0, lastUpdateResult: '', minimizeToTray: false, afkEnabled: true, afkTimeoutMin: 3, afkPassword: '', streakNotifyMilestone: true, streakNotifyAtRisk: true, streakAtRiskHour: 20 };
+const _defaults = { language: 'en', graphType: 'line', goalsGraphType: 'line', combineHabits: false, notifyEnabled: false, notifyEveryHours: 2, notifyStart: 9, notifyEnd: 22, notifyAsked: false, updateUrl: '', lastUpdateCheck: 0, lastUpdateResult: '', minimizeToTray: false, afkEnabled: true, afkTimeoutMin: 3, afkPassword: '', afkPin: '', afkUnlockMode: 'slide', streakNotifyMilestone: true, streakNotifyAtRisk: true, streakAtRiskHour: 20 };
 for (const k in _defaults) if (state.settings[k] === undefined) state.settings[k] = _defaults[k];
+if (!Array.isArray(state.goals)) state.goals = [];
+// Migrate unlock mode from legacy password-only setting
+if (!state.settings.afkUnlockMode || !['slide', 'password', 'pin'].includes(state.settings.afkUnlockMode)) {
+  state.settings.afkUnlockMode = state.settings.afkPassword ? 'password' : 'slide';
+}
 // Sync tray preference to main process
 try { if (window.serene && window.serene.setTray) window.serene.setTray(!!state.settings.minimizeToTray); } catch (e) {}
 save(STORAGE.settings, state.settings);
+save(STORAGE.goals, state.goals);
 
 
 if (!state.habits) {
@@ -163,6 +172,7 @@ function render() {
   else if (state.view === 'month') content.appendChild(viewMonth());
   else if (state.view === 'graphs') content.appendChild(viewGraphs());
   else if (state.view === 'habits') content.appendChild(viewHabits());
+  else if (state.view === 'goals') content.appendChild(viewGoals());
   else if (state.view === 'settings') content.appendChild(viewSettings());
   else if (state.view === 'patchnotes') content.appendChild(viewPatchNotes());
   else if (state.view === 'about') content.appendChild(viewAbout());
@@ -170,6 +180,196 @@ function render() {
 }
 
 function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+// -------- Glass select (custom dropdown) --------
+let _openGlassSelect = null;
+function glassSelect({ value, options, onChange, className }) {
+  const root = el('div', 'glass-select' + (className ? ' ' + className : ''));
+  const trigger = el('button', 'glass-select-trigger');
+  trigger.type = 'button';
+  let currentValue = value;
+  const current = options.find((o) => String(o.value) === String(currentValue)) || options[0];
+  const labelEl = el('span', 'glass-select-label', current ? current.label : '');
+  trigger.appendChild(labelEl);
+  trigger.appendChild(el('span', 'glass-select-chevron', ''));
+  const menu = el('div', 'glass-select-menu');
+  const paintActive = () => {
+    menu.querySelectorAll('.glass-select-option').forEach((item) => {
+      item.classList.toggle('active', String(item.dataset.value) === String(currentValue));
+    });
+  };
+  options.forEach((opt) => {
+    const item = el('button', 'glass-select-option' + (String(opt.value) === String(currentValue) ? ' active' : ''));
+    item.type = 'button';
+    item.dataset.value = String(opt.value);
+    item.textContent = opt.label;
+    item.onclick = (e) => {
+      e.stopPropagation();
+      closeGlassSelect();
+      if (String(opt.value) === String(currentValue)) return;
+      currentValue = opt.value;
+      labelEl.textContent = opt.label;
+      paintActive();
+      onChange(opt.value);
+    };
+    menu.appendChild(item);
+  });
+  trigger.onclick = (e) => {
+    e.stopPropagation();
+    const wasOpen = root.classList.contains('open');
+    closeGlassSelect();
+    if (!wasOpen) {
+      root.classList.add('open');
+      _openGlassSelect = root;
+      const host = root.closest('.glass');
+      if (host) host.classList.add('glass-select-host');
+    }
+  };
+  root.appendChild(trigger);
+  root.appendChild(menu);
+  return root;
+}
+
+function closeGlassSelect() {
+  if (_openGlassSelect) {
+    const host = _openGlassSelect.closest('.glass');
+    _openGlassSelect.classList.remove('open');
+    _openGlassSelect = null;
+    if (host && !host.querySelector('.glass-select.open')) host.classList.remove('glass-select-host');
+  }
+  document.querySelectorAll('.glass.glass-select-host').forEach((h) => {
+    if (!h.querySelector('.glass-select.open')) h.classList.remove('glass-select-host');
+  });
+}
+document.addEventListener('click', (e) => {
+  if (_openGlassSelect && !_openGlassSelect.contains(e.target)) closeGlassSelect();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeGlassSelect();
+});
+
+/** Themed alert / confirm — replaces native browser dialogs */
+function sereneDialog({ title, message, confirmLabel, cancelLabel, danger }) {
+  return new Promise((resolve) => {
+    const prev = document.getElementById('serene-dialog');
+    if (prev) prev.remove();
+    const back = el('div', 'modal-back serene-dialog-back');
+    back.id = 'serene-dialog';
+    const modal = el('div', 'modal glass serene-dialog');
+    if (title) modal.appendChild(el('h2', '', title));
+    const body = el('div', 'serene-dialog-body');
+    String(message || '').split('\n').forEach((line, i) => {
+      if (i) body.appendChild(document.createElement('br'));
+      body.appendChild(document.createTextNode(line));
+    });
+    modal.appendChild(body);
+    const acts = el('div', 'serene-dialog-actions');
+    const finish = (val) => {
+      back.remove();
+      window.removeEventListener('keydown', onKey);
+      resolve(val);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+      if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+    };
+    window.addEventListener('keydown', onKey);
+    if (cancelLabel != null) {
+      const cancel = el('button', 'btn', cancelLabel || t('dialog.cancel'));
+      cancel.onclick = () => finish(false);
+      acts.appendChild(cancel);
+    }
+    const ok = el('button', 'btn ' + (danger ? 'btn-danger' : 'btn-primary'), confirmLabel || t('dialog.ok'));
+    ok.onclick = () => finish(true);
+    acts.appendChild(ok);
+    modal.appendChild(acts);
+    back.onclick = (e) => { if (e.target === back && cancelLabel != null) finish(false); };
+    back.appendChild(modal);
+    document.body.appendChild(back);
+    setTimeout(() => ok.focus(), 30);
+  });
+}
+function sereneAlert(message, opts) {
+  opts = opts || {};
+  return sereneDialog({
+    title: opts.title || t('dialog.notice'),
+    message,
+    confirmLabel: opts.confirmLabel || t('dialog.ok'),
+    cancelLabel: null,
+  }).then(() => undefined);
+}
+function sereneConfirm(message, opts) {
+  opts = opts || {};
+  return sereneDialog({
+    title: opts.title || t('dialog.confirm'),
+    message,
+    confirmLabel: opts.confirmLabel || t('dialog.ok'),
+    cancelLabel: opts.cancelLabel || t('dialog.cancel'),
+    danger: !!opts.danger,
+  });
+}
+
+/** Keyboard-only 4-digit PIN UI (no on-screen keypad). */
+function pinKeyboardEntry({ onComplete, statusKey, className }) {
+  const box = el('div', 'pin-setup' + (className ? ' ' + className : ''));
+  box.tabIndex = 0;
+  let buf = '';
+  const status = el('div', 'pin-status muted', statusKey ? t(statusKey) : t('settings.pinEnter'));
+  const hint = el('div', 'pin-hint muted', t('settings.pinKeyboard'));
+  const slots = el('div', 'pin-slots');
+  const slotEls = [0, 1, 2, 3].map(() => {
+    const s = el('div', 'pin-slot');
+    slots.appendChild(s);
+    return s;
+  });
+  const paint = () => {
+    slotEls.forEach((s, i) => {
+      s.textContent = buf[i] ? '•' : '';
+      s.classList.toggle('filled', !!buf[i]);
+      s.classList.toggle('active', i === buf.length && buf.length < 4);
+    });
+  };
+  const setStatus = (key) => { status.textContent = t(key); };
+  const reset = (key) => {
+    buf = '';
+    paint();
+    if (key) setStatus(key);
+  };
+  const onKey = (e) => {
+    if (e.key >= '0' && e.key <= '9') {
+      e.preventDefault();
+      if (buf.length >= 4) return;
+      buf += e.key;
+      paint();
+      if (buf.length === 4 && onComplete) onComplete(buf, { reset, setStatus, shake: () => {
+        box.classList.add('shake');
+        setTimeout(() => box.classList.remove('shake'), 300);
+      }});
+    } else if (e.key === 'Backspace') {
+      e.preventDefault();
+      buf = buf.slice(0, -1);
+      paint();
+    }
+  };
+  // Capture keyboard even if focus drifts (AFK lock / settings)
+  const onDocKey = (e) => {
+    if (!document.body.contains(box)) {
+      document.removeEventListener('keydown', onDocKey, true);
+      return;
+    }
+    const tag = (e.target && e.target.tagName) || '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    onKey(e);
+  };
+  document.addEventListener('keydown', onDocKey, true);
+  box.addEventListener('click', () => box.focus());
+  box.appendChild(status);
+  box.appendChild(slots);
+  box.appendChild(hint);
+  paint();
+  setTimeout(() => box.focus(), 40);
+  return { root: box, reset, setStatus, focus: () => box.focus() };
+}
 
 function sidebar() {
   const s = el('aside', 'sidebar');
@@ -186,6 +386,7 @@ function sidebar() {
     ['month', '⊞', 'nav.month'],
     ['graphs', '∿', 'nav.graphs'],
     ['habits', '✓', 'nav.habits'],
+    ['goals', '◎', 'nav.goals'],
     ['settings', '⚙', 'nav.settings'],
     ['patchnotes', '◈', 'nav.patchnotes'],
     ['about', '❋', 'nav.about'],
@@ -275,6 +476,9 @@ function viewToday() {
 
   grid.appendChild(right);
   container.appendChild(grid);
+
+  const goalsStrip = goalsTodayStrip();
+  if (goalsStrip) container.appendChild(goalsStrip);
 
   // Notes panel (full width)
   container.appendChild(notesPanel(entry, { promptIfEmpty: true }));
@@ -479,7 +683,7 @@ function analysisPanel(md) {
   ]));
 
 
-  // Habit completion rates
+  // Habit completion rates (+ goal progress when a habit goal is set)
   panel.appendChild(el('div', 'panel-title', t('month.habitCompletion')));
   const allHabits = [
     ...state.habits.positive.map(h => ({ ...h, kind: 'pos' })),
@@ -488,14 +692,38 @@ function analysisPanel(md) {
   allHabits.filter(h => h.enabled).forEach(h => {
     const done = days.filter(d => d.checked[h.id]).length;
     const rate = days.length ? done / days.length : 0;
+    const goal = activeGoals().find((g) => g.type === 'habit' && g.habitId === h.id);
+    let statsText = Math.round(rate * 100) + '%  ·  ' + done + '/' + days.length;
+    if (goal) {
+      // Month goals follow the month being viewed; week/total use live progress
+      const ref = goal.period === 'month' ? md : new Date();
+      const gp = goalProgress(goal, ref);
+      statsText += '  ·  ' + t('month.goalProgress', { current: gp.current, target: gp.target });
+    }
     const row = el('div', 'hrate-row');
     const top = el('div', 'hrate-top');
     top.appendChild(el('span', '', habitLabel(h) + (h.kind === 'neg' ? '  ' + t('month.negTag') : '')));
-    top.appendChild(el('span', '', Math.round(rate * 100) + '%  ·  ' + done + '/' + days.length));
+    const statsEl = el('span', goal ? 'hrate-stats has-goal' : 'hrate-stats', statsText);
+    if (goal) {
+      statsEl.title = t('month.goalProgressHint', {
+        period: goal.period === 'month' ? t('goals.periodMonth') : goal.period === 'total' ? t('goals.periodTotal') : t('goals.periodWeek'),
+      });
+    }
+    top.appendChild(statsEl);
     row.appendChild(top);
     const bar = el('div', 'bar' + (h.kind === 'neg' ? ' neg' : ''));
     const fill = el('i'); fill.style.width = (rate * 100) + '%'; bar.appendChild(fill);
     row.appendChild(bar);
+    if (goal) {
+      const gp = goalProgress(goal, goal.period === 'month' ? md : new Date());
+      const gBar = el('div', 'bar goal-inline-bar' + (gp.isNeg ? ' neg' : '') + (gp.met ? ' met' : ''));
+      const gFill = el('i');
+      gFill.style.width = (gp.isNeg
+        ? Math.min(100, Math.round((gp.current / gp.target) * 100))
+        : gp.pct) + '%';
+      gBar.appendChild(gFill);
+      row.appendChild(gBar);
+    }
     panel.appendChild(row);
   });
 
@@ -755,30 +983,25 @@ function dayDetailModal(key) {
 function monthPickerControl(md, onChange) {
   const wrap = el('div', 'month-picker');
   wrap.appendChild(el('span', 'muted', t('graphs.monthPicker')));
-  const monthSel = document.createElement('select');
-  monthSel.className = 'month-select';
-  for (let i = 0; i < 12; i++) {
-    const o = document.createElement('option');
-    o.value = i;
-    o.textContent = new Date(2000, i, 1).toLocaleDateString(localeTag(), { month: 'long' });
-    if (i === md.getMonth()) o.selected = true;
-    monthSel.appendChild(o);
-  }
-  const yearSel = document.createElement('select');
-  yearSel.className = 'month-select';
+  wrap.appendChild(glassSelect({
+    value: md.getMonth(),
+    className: 'month-select',
+    options: Array.from({ length: 12 }, (_, i) => ({
+      value: i,
+      label: new Date(2000, i, 1).toLocaleDateString(localeTag(), { month: 'long' }),
+    })),
+    onChange: (m) => onChange(new Date(md.getFullYear(), Number(m), 1)),
+  }));
   const thisYear = new Date().getFullYear();
-  for (let y = thisYear - 8; y <= thisYear + 1; y++) {
-    const o = document.createElement('option');
-    o.value = y;
-    o.textContent = String(y);
-    if (y === md.getFullYear()) o.selected = true;
-    yearSel.appendChild(o);
-  }
-  const commit = () => onChange(new Date(Number(yearSel.value), Number(monthSel.value), 1));
-  monthSel.onchange = commit;
-  yearSel.onchange = commit;
-  wrap.appendChild(monthSel);
-  wrap.appendChild(yearSel);
+  wrap.appendChild(glassSelect({
+    value: md.getFullYear(),
+    className: 'month-select',
+    options: Array.from({ length: 10 }, (_, i) => {
+      const y = thisYear - 8 + i;
+      return { value: y, label: String(y) };
+    }),
+    onChange: (y) => onChange(new Date(Number(y), md.getMonth(), 1)),
+  }));
   return wrap;
 }
 
@@ -956,6 +1179,396 @@ function viewGraphs() {
   return wrap;
 }
 
+// -------- GOALS --------
+function periodRange(period, refDate = new Date()) {
+  const d = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate());
+  if (period === 'week') {
+    const day = (d.getDay() + 6) % 7;
+    const start = new Date(d); start.setDate(d.getDate() - day);
+    const end = new Date(start); end.setDate(start.getDate() + 6);
+    return { start, end };
+  }
+  if (period === 'month') {
+    return {
+      start: new Date(d.getFullYear(), d.getMonth(), 1),
+      end: new Date(d.getFullYear(), d.getMonth() + 1, 0),
+    };
+  }
+  return { start: parseKey('1970-01-01'), end: d };
+}
+
+function eachDateKey(start, end, fn) {
+  const c = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+  const last = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+  while (c <= last) {
+    fn(todayKey(c), new Date(c));
+    c.setDate(c.getDate() + 1);
+  }
+}
+
+function goalTitle(g) {
+  if (g.type === 'personal') return g.title || t('goals.untitled');
+  const habit = [...(state.habits.positive || []), ...(state.habits.negative || [])].find((h) => h.id === g.habitId);
+  return habit ? habitLabel(habit) : (g.title || t('goals.missingHabit'));
+}
+
+function goalProgress(goal, refDate = new Date()) {
+  const target = Math.max(1, Number(goal.targetCount) || 1);
+  const period = goal.period || 'week';
+  const { start, end } = period === 'total' && goal.startDate
+    ? { start: parseKey(goal.startDate), end: refDate }
+    : periodRange(period, refDate);
+  let current = 0;
+  const isNeg = goal.type === 'habit' && goal.kind === 'negative';
+
+  if (goal.type === 'personal') {
+    const keys = Array.isArray(goal.doneManual) ? goal.doneManual : [];
+    eachDateKey(start, end, (k) => { if (keys.includes(k)) current += 1; });
+  } else {
+    eachDateKey(start, end, (k) => {
+      const e = state.entries[k];
+      if (e && e.checked && e.checked[goal.habitId]) current += 1;
+    });
+  }
+
+  const pct = Math.max(0, Math.min(100, Math.round((current / target) * 100)));
+  const met = isNeg ? current <= target : current >= target;
+  return { current, target, pct, met, isNeg, start, end };
+}
+
+function goalDayValue(goal, dateKey) {
+  if (goal.type === 'personal') {
+    return (goal.doneManual || []).includes(dateKey) ? 1 : 0;
+  }
+  const e = state.entries[dateKey];
+  return (e && e.checked && e.checked[goal.habitId]) ? 1 : 0;
+}
+
+function saveGoals() { save(STORAGE.goals, state.goals); }
+
+function activeGoals() {
+  return (state.goals || []).filter((g) => g && !g.archived);
+}
+
+function goalsTodayStrip() {
+  const goals = activeGoals();
+  if (!goals.length) return null;
+  const panel = el('section', 'glass goals-strip');
+  panel.appendChild(el('h3', 'panel-title', t('goals.title')));
+  goals.slice(0, 4).forEach((g) => {
+    const p = goalProgress(g);
+    const row = el('div', 'goal-mini' + (p.met ? ' met' : ''));
+    row.appendChild(el('div', 'goal-mini-title', goalTitle(g)));
+    const bar = el('div', 'goal-bar');
+    const fill = el('div', 'goal-bar-fill');
+    fill.style.width = p.pct + '%';
+    if (p.isNeg) fill.classList.add('neg');
+    bar.appendChild(fill);
+    row.appendChild(bar);
+    row.appendChild(el('div', 'goal-mini-count muted', `${p.current}/${p.target}`));
+    if (g.type === 'personal') {
+      const tk = todayKey();
+      const done = (g.doneManual || []).includes(tk);
+      const btn = el('button', 'btn btn-icon' + (done ? ' active' : ''), done ? '✓' : '+');
+      btn.title = t('goals.checkIn');
+      btn.onclick = () => {
+        g.doneManual = Array.isArray(g.doneManual) ? g.doneManual : [];
+        if (done) g.doneManual = g.doneManual.filter((k) => k !== tk);
+        else g.doneManual.push(tk);
+        saveGoals();
+        const after = goalProgress(g);
+        if (!done && after.met) showToast(t('goals.title'), t('goals.reached', { name: goalTitle(g) }));
+        render();
+      };
+      row.appendChild(btn);
+    }
+    panel.appendChild(row);
+  });
+  const more = el('button', 'btn', t('goals.seeAll'));
+  more.onclick = () => { state.view = 'goals'; render(); };
+  panel.appendChild(more);
+  return panel;
+}
+
+function viewGoals() {
+  const wrap = document.createDocumentFragment();
+  const md = state.monthDate;
+  const chartType = state.settings.goalsGraphType === 'circle' ? 'circle' : 'line';
+
+  const head = el('div', 'page-head');
+  const l = el('div');
+  l.appendChild(el('h1', 'page-title', t('goals.title')));
+  l.appendChild(el('div', 'page-sub', t('goals.sub')));
+  head.appendChild(l);
+  wrap.appendChild(head);
+
+  const draft = state.goalDraft || { type: 'habit', period: 'week', targetCount: 5, title: '', habitId: '', kind: 'positive' };
+  state.goalDraft = draft;
+
+  // Create form
+  const form = el('section', 'glass goals-panel');
+  form.appendChild(el('h3', 'panel-title', t('goals.create')));
+
+  const typeField = el('div', 'goal-field');
+  typeField.appendChild(el('div', 'goal-field-label', t('goals.typeHabit') + ' / ' + t('goals.typePersonal')));
+  const typeChips = el('div', 'chip-group');
+  [['habit', t('goals.typeHabit')], ['personal', t('goals.typePersonal')]].forEach(([val, label]) => {
+    const c = el('div', 'chip' + (draft.type === val ? ' active' : ''), label);
+    c.onclick = () => { draft.type = val; render(); };
+    typeChips.appendChild(c);
+  });
+  typeField.appendChild(typeChips);
+  form.appendChild(typeField);
+
+  if (draft.type === 'personal') {
+    const titleField = el('div', 'goal-field');
+    titleField.appendChild(el('div', 'goal-field-label', t('goals.typePersonal')));
+    const titleInp = document.createElement('input');
+    titleInp.type = 'text';
+    titleInp.className = 'glass-input';
+    titleInp.placeholder = t('goals.titlePlaceholder');
+    titleInp.value = draft.title || '';
+    titleInp.oninput = () => { draft.title = titleInp.value; };
+    titleField.appendChild(titleInp);
+    form.appendChild(titleField);
+  } else {
+    const habitField = el('div', 'goal-field');
+    habitField.appendChild(el('div', 'goal-field-label', t('goals.typeHabit')));
+    const allHabits = [
+      ...(state.habits.positive || []).filter((h) => h.enabled).map((h) => ({ ...h, kind: 'positive' })),
+      ...(state.habits.negative || []).filter((h) => h.enabled).map((h) => ({ ...h, kind: 'negative' })),
+    ];
+    if (!allHabits.length) {
+      habitField.appendChild(el('div', 'empty-state', t('goals.noHabits')));
+    } else {
+      if (!draft.habitId) {
+        draft.habitId = allHabits[0].id;
+        draft.kind = allHabits[0].kind;
+      }
+      habitField.appendChild(glassSelect({
+        value: draft.habitId,
+        options: allHabits.map((h) => ({
+          value: h.id,
+          label: (h.kind === 'negative' ? t('goals.negTag') + ' ' : '') + habitLabel(h),
+        })),
+        onChange: (id) => {
+          const h = allHabits.find((x) => x.id === id);
+          draft.habitId = id;
+          draft.kind = h ? h.kind : 'positive';
+          render();
+        },
+      }));
+      habitField.appendChild(el('div', 'setting-hint', draft.kind === 'negative' ? t('goals.negHint') : t('goals.posHint')));
+    }
+    form.appendChild(habitField);
+  }
+
+  const targetField = el('div', 'goal-field');
+  targetField.appendChild(el('div', 'goal-field-label', t('goals.target')));
+  const targetRow = el('div', 'row wrap goal-target-row');
+  const targetInp = document.createElement('input');
+  targetInp.type = 'number';
+  targetInp.min = '1';
+  targetInp.max = '365';
+  targetInp.value = draft.targetCount || 5;
+  targetInp.className = 'goal-target-input';
+  targetInp.onchange = () => { draft.targetCount = Math.max(1, Number(targetInp.value) || 1); };
+  targetRow.appendChild(targetInp);
+  targetRow.appendChild(glassSelect({
+    value: draft.period || 'week',
+    options: [
+      { value: 'week', label: t('goals.periodWeek') },
+      { value: 'month', label: t('goals.periodMonth') },
+      { value: 'total', label: t('goals.periodTotal') },
+    ],
+    onChange: (p) => { draft.period = p; },
+  }));
+  targetField.appendChild(targetRow);
+  form.appendChild(targetField);
+
+  const addBtn = el('button', 'btn btn-primary', t('goals.add'));
+  addBtn.onclick = async () => {
+    const title = draft.type === 'personal' ? String(draft.title || '').trim() : '';
+    if (draft.type === 'personal' && !title) { await sereneAlert(t('goals.needTitle')); return; }
+    if (draft.type === 'habit' && !draft.habitId) { await sereneAlert(t('goals.needHabit')); return; }
+    const g = {
+      id: uid(),
+      type: draft.type,
+      title: draft.type === 'personal' ? title : '',
+      habitId: draft.type === 'habit' ? draft.habitId : null,
+      kind: draft.type === 'habit' ? draft.kind : null,
+      targetCount: Math.max(1, Number(draft.targetCount) || 1),
+      period: draft.period || 'week',
+      startDate: todayKey(),
+      doneManual: [],
+      archived: false,
+      createdAt: new Date().toISOString(),
+    };
+    state.goals.unshift(g);
+    state.goalDraft = { type: draft.type, period: 'week', targetCount: 5, title: '', habitId: '', kind: 'positive' };
+    saveGoals();
+    showToast(t('goals.title'), t('goals.created'));
+    render();
+  };
+  form.appendChild(addBtn);
+  wrap.appendChild(form);
+
+  // Active goals list
+  const list = el('section', 'glass goals-panel');
+  list.appendChild(el('h3', 'panel-title', t('goals.active')));
+  const goals = activeGoals();
+  if (!goals.length) {
+    list.appendChild(el('div', 'empty-state', t('goals.empty')));
+  } else {
+    const cards = el('div', 'goal-list');
+    goals.forEach((g) => {
+      const p = goalProgress(g);
+      const card = el('div', 'goal-card' + (p.met ? ' met' : ''));
+      const top = el('div', 'goal-card-top');
+      top.appendChild(el('div', 'goal-card-title', goalTitle(g)));
+      top.appendChild(el('div', 'goal-card-meta muted',
+        (g.type === 'habit' ? t('goals.typeHabit') : t('goals.typePersonal')) +
+        ' · ' + (g.period === 'month' ? t('goals.periodMonth') : g.period === 'total' ? t('goals.periodTotal') : t('goals.periodWeek')) +
+        ' · ' + `${p.current}/${p.target}`
+      ));
+      card.appendChild(top);
+      const bar = el('div', 'goal-bar');
+      const fill = el('div', 'goal-bar-fill');
+      fill.style.width = (p.isNeg ? Math.min(100, Math.round((p.current / p.target) * 100)) : p.pct) + '%';
+      if (p.isNeg) fill.classList.add('neg');
+      bar.appendChild(fill);
+      card.appendChild(bar);
+      if (p.met) card.appendChild(el('div', 'goal-met', t('goals.reachedShort')));
+      const acts = el('div', 'row wrap goal-card-actions');
+      if (g.type === 'personal') {
+        const tk = todayKey();
+        const done = (g.doneManual || []).includes(tk);
+        const chk = el('button', 'btn' + (done ? ' btn-primary' : ''), done ? t('goals.checkedToday') : t('goals.checkIn'));
+        chk.onclick = () => {
+          g.doneManual = Array.isArray(g.doneManual) ? g.doneManual : [];
+          if (done) g.doneManual = g.doneManual.filter((k) => k !== tk);
+          else {
+            g.doneManual.push(tk);
+            const after = goalProgress(g);
+            if (after.met) showToast(t('goals.title'), t('goals.reached', { name: goalTitle(g) }));
+          }
+          saveGoals();
+          render();
+        };
+        acts.appendChild(chk);
+      }
+      const arch = el('button', 'btn', t('goals.archive'));
+      arch.title = t('goals.archiveHint');
+      arch.onclick = async () => {
+        if (!(await sereneConfirm(t('goals.archiveConfirm'), { title: t('goals.archive') }))) return;
+        g.archived = true;
+        saveGoals();
+        showToast(t('goals.title'), t('goals.archivedToast'));
+        render();
+      };
+      acts.appendChild(arch);
+      card.appendChild(acts);
+      cards.appendChild(card);
+    });
+    list.appendChild(cards);
+  }
+  wrap.appendChild(list);
+
+  // Archived (recoverable)
+  const archived = (state.goals || []).filter((g) => g && g.archived);
+  if (archived.length) {
+    const archPanel = el('section', 'glass goals-panel');
+    archPanel.appendChild(el('h3', 'panel-title', t('goals.archived')));
+    archPanel.appendChild(el('div', 'setting-hint', t('goals.archiveHint')));
+    const archList = el('div', 'goal-list');
+    archived.forEach((g) => {
+      const card = el('div', 'goal-card archived');
+      card.appendChild(el('div', 'goal-card-title', goalTitle(g)));
+      const acts = el('div', 'row wrap goal-card-actions');
+      const restore = el('button', 'btn btn-primary', t('goals.restore'));
+      restore.onclick = () => { g.archived = false; saveGoals(); render(); };
+      const del = el('button', 'btn btn-danger', t('goals.remove'));
+      del.onclick = async () => {
+        if (!(await sereneConfirm(t('goals.removeConfirm'), { title: t('goals.remove'), danger: true, confirmLabel: t('goals.remove') }))) return;
+        state.goals = state.goals.filter((x) => x.id !== g.id);
+        saveGoals();
+        render();
+      };
+      acts.appendChild(restore);
+      acts.appendChild(del);
+      card.appendChild(acts);
+      archList.appendChild(card);
+    });
+    archPanel.appendChild(archList);
+    wrap.appendChild(archPanel);
+  }
+
+  // Goals graphs
+  const graphs = el('section', 'glass goals-panel');
+  const gHead = el('div', 'goals-graphs-head');
+  gHead.appendChild(el('h3', 'panel-title', t('goals.graphs')));
+  const gTools = el('div', 'row wrap graphs-toolbar');
+  gTools.appendChild(monthPickerControl(md, (d) => { state.monthDate = d; render(); }));
+  const typeGroup = el('div', 'chip-group');
+  [['line', t('graphs.line')], ['circle', t('graphs.circle')]].forEach(([val, label]) => {
+    const c = el('div', 'chip' + (chartType === val ? ' active' : ''), label);
+    c.onclick = () => { state.settings.goalsGraphType = val; save(STORAGE.settings, state.settings); render(); };
+    typeGroup.appendChild(c);
+  });
+  gTools.appendChild(typeGroup);
+  gHead.appendChild(gTools);
+  graphs.appendChild(gHead);
+
+  if (!goals.length) {
+    graphs.appendChild(el('div', 'empty-state', t('goals.graphsEmpty')));
+  } else if (chartType === 'circle') {
+    const grid = el('div', 'donut-grid');
+    goals.forEach((g, i) => {
+      const p = goalProgress(g, md);
+      const color = p.isNeg ? 'var(--bad)' : habitPalette(i, false);
+      const show = p.isNeg
+        ? Math.max(0, Math.min(100, 100 - Math.round((p.current / p.target) * 100)))
+        : p.pct;
+      grid.appendChild(donutChart(goalTitle(g), show, 100, color, `${p.current}/${p.target}`));
+    });
+    graphs.appendChild(grid);
+  } else {
+    const y = md.getFullYear(), m = md.getMonth();
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const maxTarget = Math.max(1, ...goals.map((g) => Number(g.targetCount) || 1), 1);
+    const maps = goals.slice(0, 6).map((g) => {
+      let cum = 0;
+      const map = {};
+      for (let d = 1; d <= daysInMonth; d++) {
+        const k = todayKey(new Date(y, m, d));
+        cum += goalDayValue(g, k);
+        map[k] = cum;
+      }
+      return map;
+    });
+    const series2 = goals.slice(0, 6).map((g, i) => ({
+      key: 'goal_' + g.id,
+      label: goalTitle(g),
+      color: habitPalette(i, g.kind === 'negative'),
+      compute: (e) => maps[i][e.date],
+      tipFmt: (v) => String(Math.round(Number(v) || 0)),
+    }));
+    const saved = state.entries;
+    const temp = Object.assign({}, saved);
+    for (let d = 1; d <= daysInMonth; d++) {
+      const k = todayKey(new Date(y, m, d));
+      if (!temp[k]) temp[k] = { date: k, submitted: true, mood: 0, mental: 0, checked: {} };
+      else temp[k] = Object.assign({}, temp[k], { date: k, submitted: true });
+    }
+    state.entries = temp;
+    graphs.appendChild(lineChart(y, m, daysInMonth, series2, { big: true, max: maxTarget, yFmt: (v) => String(Math.round(v)) }));
+    state.entries = saved;
+  }
+  wrap.appendChild(graphs);
+
+  return wrap;
+}
+
 // -------- ABOUT / SERENE --------
 function viewAbout() {
   const wrap = document.createDocumentFragment();
@@ -998,7 +1611,9 @@ function viewAbout() {
 }
 
 // -------- PATCH NOTES --------
+const APP_VERSION = '1.1.15';
 const PATCH_NOTES = [
+  { v: '1.1.15', date: '2026', noteKeys: ['patch.v1_1_15.n1','patch.v1_1_15.n2','patch.v1_1_15.n3','patch.v1_1_15.n4','patch.v1_1_15.n5','patch.v1_1_15.n6'] },
   { v: '1.1.14', date: '2026', noteKeys: ['patch.v1_1_14.n1','patch.v1_1_14.n2','patch.v1_1_14.n3','patch.v1_1_14.n4'] },
   { v: '1.1.13', date: '2026', noteKeys: ['patch.v1_1_13.n1','patch.v1_1_13.n2'] },
   { v: '1.1.12', date: '2026', noteKeys: ['patch.v1_1_12.n1','patch.v1_1_12.n2','patch.v1_1_12.n3','patch.v1_1_12.n4','patch.v1_1_12.n5'] },
@@ -1128,27 +1743,25 @@ function viewSettings() {
 
   const panel = el('section', 'glass');
   // language
-  const langRow = el('div', 'setting-row');
-  const ll = el('div', 'setting-label'); ll.appendChild(el('b', '', t('settings.language'))); ll.appendChild(el('span', '', t('settings.languageHint')));
+  const langRow = el('div', 'setting-row setting-row-stack');
+  const ll = el('div', 'setting-label');
+  ll.appendChild(el('b', '', t('settings.language')));
   langRow.appendChild(ll);
-  const langSel = document.createElement('select');
-  langSel.className = 'month-select';
+  const langControl = el('div', 'setting-control');
   const langs = (window.SereneI18n && window.SereneI18n.languages) || [{ code: 'en', label: 'English' }];
-  langs.forEach((lang) => {
-    const o = document.createElement('option');
-    o.value = lang.code;
-    o.textContent = lang.label;
-    if ((state.settings.language || 'en') === lang.code) o.selected = true;
-    langSel.appendChild(o);
-  });
-  langSel.onchange = () => {
-    state.settings.language = langSel.value;
-    save(STORAGE.settings, state.settings);
-    document.documentElement.lang = langSel.value;
-    syncPresetHabitNames();
-    render();
-  };
-  langRow.appendChild(langSel);
+  langControl.appendChild(glassSelect({
+    value: state.settings.language || 'en',
+    options: langs.map((lang) => ({ value: lang.code, label: lang.label })),
+    onChange: (code) => {
+      state.settings.language = code;
+      save(STORAGE.settings, state.settings);
+      document.documentElement.lang = code;
+      syncPresetHabitNames();
+      render();
+    },
+  }));
+  langControl.appendChild(el('div', 'setting-hint', t('settings.languageHint')));
+  langRow.appendChild(langControl);
   panel.appendChild(langRow);
 
   // theme
@@ -1218,15 +1831,19 @@ function viewSettings() {
     fl.appendChild(el('span', '', t('settings.freqHint', { start: fmtHr(state.settings.notifyStart), end: fmtHr(state.settings.notifyEnd) })));
     fRow.appendChild(fl);
     const fActs = el('div', 'row');
-    const sel = document.createElement('select');
-    [1,2,3,4,6,8].forEach(h => {
-      const o = document.createElement('option'); o.value = h;
-      o.textContent = h === 1 ? t('settings.everyHour', { n: h }) : t('settings.everyHours', { n: h });
-      if (state.settings.notifyEveryHours === h) o.selected = true;
-      sel.appendChild(o);
-    });
-    sel.onchange = () => { state.settings.notifyEveryHours = Number(sel.value); save(STORAGE.settings, state.settings); scheduleNotifications(); render(); };
-    fActs.appendChild(sel);
+    fActs.appendChild(glassSelect({
+      value: state.settings.notifyEveryHours,
+      options: [1, 2, 3, 4, 6, 8].map((h) => ({
+        value: h,
+        label: h === 1 ? t('settings.everyHour', { n: h }) : t('settings.everyHours', { n: h }),
+      })),
+      onChange: (h) => {
+        state.settings.notifyEveryHours = Number(h);
+        save(STORAGE.settings, state.settings);
+        scheduleNotifications();
+        render();
+      },
+    }));
 
     const mkHourInput = (val, onCommit) => {
       const wrap = el('div', 'num-wrap');
@@ -1253,8 +1870,8 @@ function viewSettings() {
 
     const test = el('button', 'btn', t('settings.sendTest'));
     test.onclick = async () => {
-      const ok = await sendNotification('Serene', 'This is a test reminder. Take a slow breath.');
-      if (!ok) alert('Could not show a notification. On Windows, make sure Serene is allowed to send notifications in Settings → System → Notifications.');
+      const ok = await sendNotification('Serene', t('notify.testBody'));
+      if (!ok) await sereneAlert(t('notify.blocked'));
     };
     fActs.appendChild(test);
     fRow.appendChild(fActs);
@@ -1338,40 +1955,111 @@ function viewSettings() {
     tl2.appendChild(el('span', '', t('settings.timeoutHint')));
     tRow.appendChild(tl2);
     const tActs = el('div', 'row');
-    const tSel = document.createElement('select');
-    [1,2,3,5,10,15,20,30].forEach(n => {
-      const o = document.createElement('option'); o.value = n;
-      o.textContent = n === 1 ? t('settings.minute', { n }) : t('settings.minutes', { n });
-      if (state.settings.afkTimeoutMin === n) o.selected = true;
-      tSel.appendChild(o);
-    });
-    tSel.onchange = () => { state.settings.afkTimeoutMin = Number(tSel.value); save(STORAGE.settings, state.settings); resetIdleTimer(); };
-    tActs.appendChild(tSel);
+    tActs.appendChild(glassSelect({
+      value: state.settings.afkTimeoutMin,
+      options: [1, 2, 3, 5, 10, 15, 20, 30].map((n) => ({
+        value: n,
+        label: n === 1 ? t('settings.minute', { n }) : t('settings.minutes', { n }),
+      })),
+      onChange: (n) => {
+        state.settings.afkTimeoutMin = Number(n);
+        save(STORAGE.settings, state.settings);
+        resetIdleTimer();
+      },
+    }));
     const lockNow = el('button', 'btn', t('settings.lockNow'));
     lockNow.onclick = () => showAfkLock();
     tActs.appendChild(lockNow);
     tRow.appendChild(tActs);
     panel.appendChild(tRow);
 
-    const pRow = el('div', 'setting-row');
-    const pl = el('div', 'setting-label');
-    pl.appendChild(el('b', '', t('settings.password')));
-    pl.appendChild(el('span', '', state.settings.afkPassword ? t('settings.passwordSet') : t('settings.passwordNone')));
-    pRow.appendChild(pl);
-    const pActs = el('div', 'row');
-    const pInp = document.createElement('input'); pInp.type = 'password'; pInp.placeholder = t('settings.passwordPlaceholder');
-    const pSave = el('button', 'btn btn-primary', state.settings.afkPassword ? t('settings.updatePwd') : t('settings.set'));
-    pSave.onclick = () => {
-      state.settings.afkPassword = pInp.value || '';
-      save(STORAGE.settings, state.settings);
-      render();
-    };
-    const pClear = el('button', 'btn btn-danger', t('settings.remove'));
-    pClear.onclick = () => { state.settings.afkPassword = ''; save(STORAGE.settings, state.settings); render(); };
-    pActs.appendChild(pInp); pActs.appendChild(pSave);
-    if (state.settings.afkPassword) pActs.appendChild(pClear);
-    pRow.appendChild(pActs);
-    panel.appendChild(pRow);
+    // Unlock method
+    const modeRow = el('div', 'setting-row setting-row-stack');
+    const ml = el('div', 'setting-label');
+    ml.appendChild(el('b', '', t('settings.unlockMethod')));
+    ml.appendChild(el('span', '', t('settings.unlockMethodHint')));
+    modeRow.appendChild(ml);
+    const modeChips = el('div', 'chip-group');
+    [
+      ['slide', t('settings.unlockSlide')],
+      ['password', t('settings.unlockPassword')],
+      ['pin', t('settings.unlockPin')],
+    ].forEach(([val, label]) => {
+      const c = el('div', 'chip' + (state.settings.afkUnlockMode === val ? ' active' : ''), label);
+      c.onclick = () => {
+        state.settings.afkUnlockMode = val;
+        save(STORAGE.settings, state.settings);
+        render();
+      };
+      modeChips.appendChild(c);
+    });
+    modeRow.appendChild(modeChips);
+    panel.appendChild(modeRow);
+
+    if (state.settings.afkUnlockMode === 'password') {
+      const pRow = el('div', 'setting-row setting-row-stack');
+      const pl = el('div', 'setting-label');
+      pl.appendChild(el('b', '', t('settings.password')));
+      pl.appendChild(el('span', '', state.settings.afkPassword ? t('settings.passwordSet') : t('settings.passwordNone')));
+      pRow.appendChild(pl);
+      const pActs = el('div', 'row wrap');
+      const pInp = document.createElement('input');
+      pInp.type = 'password';
+      pInp.className = 'glass-input';
+      pInp.placeholder = t('settings.passwordPlaceholder');
+      const pSave = el('button', 'btn btn-primary', state.settings.afkPassword ? t('settings.updatePwd') : t('settings.set'));
+      pSave.onclick = () => {
+        state.settings.afkPassword = pInp.value || '';
+        save(STORAGE.settings, state.settings);
+        render();
+      };
+      const pClear = el('button', 'btn btn-danger', t('settings.remove'));
+      pClear.onclick = () => { state.settings.afkPassword = ''; save(STORAGE.settings, state.settings); render(); };
+      pActs.appendChild(pInp); pActs.appendChild(pSave);
+      if (state.settings.afkPassword) pActs.appendChild(pClear);
+      pRow.appendChild(pActs);
+      panel.appendChild(pRow);
+    }
+
+    if (state.settings.afkUnlockMode === 'pin') {
+      const pinRow = el('div', 'setting-row setting-row-stack');
+      const pinL = el('div', 'setting-label');
+      pinL.appendChild(el('b', '', t('settings.pin')));
+      pinL.appendChild(el('span', '', state.settings.afkPin ? t('settings.pinSet') : t('settings.pinNone')));
+      pinRow.appendChild(pinL);
+      let pending = '';
+      let phase = 'enter';
+      const pin = pinKeyboardEntry({
+        statusKey: 'settings.pinEnter',
+        onComplete: (code, api) => {
+          if (phase === 'enter') {
+            pending = code;
+            phase = 'confirm';
+            api.reset('settings.pinConfirm');
+            return;
+          }
+          if (code === pending) {
+            state.settings.afkPin = code;
+            save(STORAGE.settings, state.settings);
+            showToast(t('settings.pin'), t('settings.pinSaved'));
+            render();
+          } else {
+            api.shake();
+            pending = '';
+            phase = 'enter';
+            api.setStatus('settings.pinMismatch');
+            setTimeout(() => api.reset('settings.pinEnter'), 500);
+          }
+        },
+      });
+      if (state.settings.afkPin) {
+        const clearPin = el('button', 'btn btn-danger', t('settings.remove'));
+        clearPin.onclick = () => { state.settings.afkPin = ''; save(STORAGE.settings, state.settings); render(); };
+        pin.root.appendChild(clearPin);
+      }
+      pinRow.appendChild(pin.root);
+      panel.appendChild(pinRow);
+    }
   }
 
 
@@ -1385,15 +2073,17 @@ function viewSettings() {
     save(STORAGE.habits, state.habits);
     save(STORAGE.entries, state.entries);
     save(STORAGE.settings, state.settings);
+    save(STORAGE.goals, state.goals);
     const posN = (state.habits.positive || []).length;
     const negN = (state.habits.negative || []).length;
     const dayN = Object.keys(state.entries || {}).length;
     const payload = {
-      v: 2,
+      v: 3,
       exportedAt: new Date().toISOString(),
       habits: state.habits,
       entries: state.entries,
       settings: state.settings,
+      goals: state.goals,
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -1405,28 +2095,32 @@ function viewSettings() {
   impFile.onchange = () => {
     const f = impFile.files && impFile.files[0]; if (!f) return;
     const r = new FileReader();
-    r.onload = () => {
+    r.onload = async () => {
       try {
         const data = JSON.parse(r.result);
         if (!data || typeof data !== 'object') throw new Error(t('backup.invalidFile'));
-        const mode = confirm(t('backup.importMode'));
-        const result = importData(data, mode ? 'merge' : 'replace');
+        const merge = await sereneConfirm(t('backup.importMode'), {
+          title: t('settings.import'),
+          confirmLabel: t('backup.merge'),
+          cancelLabel: t('backup.replace'),
+        });
+        const result = importData(data, merge ? 'merge' : 'replace');
         if (result && result.orphanChecks) {
-          alert(t('backup.orphanWarn', { count: result.orphanChecks }));
+          await sereneAlert(t('backup.orphanWarn', { count: result.orphanChecks }));
         }
-        alert(t('backup.importComplete'));
+        await sereneAlert(t('backup.importComplete'));
         render();
       } catch (e) {
-        alert(t('backup.importFailed', { error: (e && e.message) ? e.message : t('backup.invalidFile') }));
+        await sereneAlert(t('backup.importFailed', { error: (e && e.message) ? e.message : t('backup.invalidFile') }));
       }
       impFile.value = '';
     };
     r.readAsText(f);
   };
   const imp = el('button', 'btn', t('settings.import')); imp.onclick = () => impFile.click();
-  const reset = el('button', 'btn btn-danger', t('settings.reset')); reset.onclick = () => {
-    if (!confirm(t('settings.resetConfirm'))) return;
-    localStorage.removeItem(STORAGE.habits); localStorage.removeItem(STORAGE.entries);
+  const reset = el('button', 'btn btn-danger', t('settings.reset')); reset.onclick = async () => {
+    if (!(await sereneConfirm(t('settings.resetConfirm'), { title: t('settings.reset'), danger: true, confirmLabel: t('settings.reset') }))) return;
+    localStorage.removeItem(STORAGE.habits); localStorage.removeItem(STORAGE.entries); localStorage.removeItem(STORAGE.goals);
     location.reload();
   };
   dActs.appendChild(exp); dActs.appendChild(imp); dActs.appendChild(impFile); dActs.appendChild(reset);
@@ -1448,17 +2142,21 @@ function viewSettings() {
   urlI.onchange = () => { state.settings.updateUrl = urlI.value.trim(); save(STORAGE.settings, state.settings); };
   const check = el('button', 'btn btn-primary', t('settings.checkUpdates'));
   check.onclick = async () => {
-    check.disabled = true; check.textContent = 'Checking…';
+    check.disabled = true; check.textContent = t('settings.checking');
     const res = await checkForUpdates();
     state.settings.lastUpdateCheck = Date.now();
     state.settings.lastUpdateResult = res.message;
     save(STORAGE.settings, state.settings);
     if (res.url) {
-      if (confirm(`${res.message}\n\nOpen download page?`)) {
+      if (await sereneConfirm(t('settings.openDownload', { message: res.message }), {
+        title: t('settings.updates'),
+        confirmLabel: t('settings.openPage'),
+        cancelLabel: t('dialog.cancel'),
+      })) {
         if (window.serene && window.serene.openExternal) window.serene.openExternal(res.url);
       }
     } else {
-      alert(res.message);
+      await sereneAlert(res.message, { title: t('settings.updates') });
     }
     render();
   };
@@ -1470,7 +2168,6 @@ function viewSettings() {
   return wrap;
 }
 
-const APP_VERSION = '1.1.14';
 const fmtHr = (h) => { const n = ((h % 24) + 24) % 24; const s = n < 12 ? 'AM' : 'PM'; const hh = ((n + 11) % 12) + 1; return `${hh} ${s}`; };
 
 async function ensureNotifyPermission() {
@@ -1479,7 +2176,7 @@ async function ensureNotifyPermission() {
   if (window.serene && window.serene.notify) return true;
   if (!('Notification' in window)) return true;
   if (Notification.permission === 'granted') return true;
-  if (Notification.permission === 'denied') { alert('Notifications are blocked. Enable them in your OS notification settings for Serene.'); return false; }
+  if (Notification.permission === 'denied') { await sereneAlert(t('notify.blocked')); return false; }
   try {
     const p = await Notification.requestPermission();
     return p === 'granted';
@@ -1596,19 +2293,19 @@ function scheduleNotifications() {
 
 async function checkForUpdates() {
   const url = (state.settings.updateUrl || '').trim();
-  if (!url) return { message: 'No update URL configured. Paste a JSON manifest URL (with a "version" field) to enable checks.' };
+  if (!url) return { message: t('update.noUrl') };
   try {
     const r = await fetch(url, { cache: 'no-store' });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const data = await r.json();
     const remote = String(data.version || '').trim();
-    if (!remote) throw new Error('manifest missing "version"');
+    if (!remote) throw new Error(t('update.missingVersion'));
     if (cmpVer(remote, APP_VERSION) > 0) {
-      return { message: `Update available: v${remote} (you have v${APP_VERSION}).`, url: data.url || data.download || url };
+      return { message: t('update.available', { remote, current: APP_VERSION }), url: data.url || data.download || url };
     }
-    return { message: `You're up to date (v${APP_VERSION}).` };
+    return { message: t('update.upToDate', { version: APP_VERSION }) };
   } catch (e) {
-    return { message: 'Update check failed: ' + (e && e.message ? e.message : 'unknown error') };
+    return { message: t('update.failed', { error: (e && e.message) ? e.message : t('update.unknown') }) };
   }
 }
 function cmpVer(a, b) {
@@ -1727,6 +2424,9 @@ function importData(data, mode) {
     if (data.settings && typeof data.settings === 'object') {
       state.settings = Object.assign({}, state.settings, data.settings);
     }
+    if (Array.isArray(data.goals)) {
+      state.goals = data.goals;
+    }
   } else {
     if (data.habits) {
       ['positive', 'negative'].forEach((k) => {
@@ -1743,10 +2443,21 @@ function importData(data, mode) {
     if (data.settings && typeof data.settings === 'object') {
       state.settings = Object.assign({}, state.settings, data.settings);
     }
+    if (Array.isArray(data.goals)) {
+      const byId = new Map((state.goals || []).map((g) => [g.id, g]));
+      data.goals.forEach((g) => {
+        if (!g || !g.id) return;
+        if (g.habitId && idMap[g.habitId]) g = Object.assign({}, g, { habitId: idMap[g.habitId] });
+        if (byId.has(g.id)) byId.set(g.id, Object.assign({}, byId.get(g.id), g));
+        else byId.set(g.id, g);
+      });
+      state.goals = Array.from(byId.values());
+    }
   }
   save(STORAGE.habits, state.habits);
   save(STORAGE.entries, state.entries);
   save(STORAGE.settings, state.settings);
+  save(STORAGE.goals, state.goals);
   return { orphanChecks: countOrphanChecks(state.habits, state.entries) };
 }
 
@@ -1756,13 +2467,17 @@ async function maybePromptNotifications() {
   state.settings.notifyAsked = true;
   save(STORAGE.settings, state.settings);
   setTimeout(async () => {
-    const yes = confirm('Would you like Serene to send you gentle reminders throughout the day to check in with your mood and habits?\n\nYou can change the frequency or turn this off any time in Settings.');
+    const yes = await sereneConfirm(t('notify.ask'), {
+      title: t('settings.reminders'),
+      confirmLabel: t('dialog.yes'),
+      cancelLabel: t('dialog.no'),
+    });
     if (yes) {
       const ok = await ensureNotifyPermission();
       state.settings.notifyEnabled = ok;
       save(STORAGE.settings, state.settings);
       scheduleNotifications();
-      if (ok) await sendNotification('Serene', 'Reminders are on. See you in a couple of hours 🌿');
+      if (ok) await sendNotification('Serene', t('notify.enabled'));
     }
   }, 800);
 }
@@ -1901,11 +2616,13 @@ function showAfkLock() {
     if (!document.getElementById('afk-lock')) { cleanup(); obs.disconnect(); }
   }).observe(document.body, { childList: true });
 
-  if (state.settings.afkPassword) {
+  const unlockMode = state.settings.afkUnlockMode || (state.settings.afkPassword ? 'password' : 'slide');
+  if (unlockMode === 'password' && state.settings.afkPassword) {
     const form = document.createElement('form');
     form.className = 'afk-pw';
     const inp = document.createElement('input');
     inp.type = 'password';
+    inp.className = 'glass-input';
     inp.placeholder = t('afk.passwordPlaceholder');
     inp.autocomplete = 'off';
     const err = document.createElement('div');
@@ -1929,6 +2646,22 @@ function showAfkLock() {
     };
     card.appendChild(form);
     setTimeout(() => inp.focus(), 50);
+  } else if (unlockMode === 'pin' && state.settings.afkPin) {
+    const pin = pinKeyboardEntry({
+      className: 'afk-pin',
+      statusKey: 'afk.hintPin',
+      onComplete: (code, api) => {
+        if (code === state.settings.afkPin) {
+          clearInterval(clockInt);
+          hideAfkLock();
+        } else {
+          api.shake();
+          api.setStatus('afk.incorrect');
+          setTimeout(() => api.reset('afk.hintPin'), 450);
+        }
+      },
+    });
+    card.appendChild(pin.root);
   } else {
     const slideWrap = document.createElement('div');
     slideWrap.className = 'afk-slide';
@@ -1989,7 +2722,11 @@ function showAfkLock() {
 
   const hint = document.createElement('div');
   hint.className = 'afk-hint';
-  hint.textContent = state.settings.afkPassword ? t('afk.hintPassword') : t('afk.hintSlide');
+  hint.textContent = unlockMode === 'password' && state.settings.afkPassword
+    ? t('afk.hintPassword')
+    : unlockMode === 'pin' && state.settings.afkPin
+      ? t('afk.hintPin')
+      : t('afk.hintSlide');
   card.appendChild(hint);
 
   back.appendChild(card);

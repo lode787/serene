@@ -1477,21 +1477,30 @@
                 glowVisible = false;
             });
 
-            /* ------- show latest release version on Download button ------- */
+            /* ------- always point Download at the newest GitHub Release zip ------- */
             (function () {
                 const btn = document.getElementById('download-latest');
                 const label = document.getElementById('download-latest-label');
                 if (!btn) return;
-                // Stable asset name uploaded with every tagged release
-                btn.href = 'https://github.com/lode787/serene/releases/latest/download/Serene-Windows.zip';
+                const fallback = 'https://github.com/lode787/serene/releases/latest/download/Serene-Windows.zip';
+                btn.href = fallback;
                 fetch('https://api.github.com/repos/lode787/serene/releases/latest')
                     .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
                     .then(function (data) {
+                        var assets = Array.isArray(data.assets) ? data.assets : [];
+                        var preferred = assets.find(function (a) { return a && a.name === 'Serene-Windows.zip'; })
+                            || assets.find(function (a) { return a && /Serene-Windows.*\.zip$/i.test(a.name || ''); })
+                            || assets.find(function (a) { return a && /\.zip$/i.test(a.name || ''); });
+                        if (preferred && preferred.browser_download_url) {
+                            btn.href = preferred.browser_download_url;
+                        } else if (data.html_url) {
+                            btn.href = data.html_url;
+                        }
                         if (label && data.tag_name) {
                             label.textContent = 'Download Serene ' + String(data.tag_name);
                         }
                     })
-                    .catch(function () { /* keep default label */ });
+                    .catch(function () { /* keep fallback href + default label */ });
             })();
         })();
     </script>

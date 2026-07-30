@@ -1,19 +1,59 @@
 {
   "name": "serene",
   "productName": "Serene",
-  "version": "1.1.14",
+  "version": "1.1.15",
   "description": "Serene - Mental health and habit tracker",
   "main": "main.cjs",
   "author": "Serene",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "package": "node scripts/package.js",
+    "package": "electron-builder --win nsis --x64",
     "zip": "node scripts/make-zip.js",
     "release": "npm run package && npm run zip"
   },
+  "build": {
+    "appId": "dev.lode787.serene",
+    "productName": "Serene",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!dist/**",
+      "!release/**",
+      "!scripts/**",
+      "!**/*.md",
+      "!package-lock.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "artifactName": "SereneSetup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Serene",
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false
+    }
+  },
   "devDependencies": {
-    "@electron/packager": "^20.0.4",
-    "electron": "^43.2.0"
+    "electron": "^43.2.0",
+    "electron-builder": "^26.15.3"
   }
 }

@@ -45,9 +45,10 @@ Join our Discord server to connect with other Serene users, share feedback, and 
 ## Installation
 
 1. Download the latest release zip file
-2. Extract to your desired location
-3. Run `Serene.exe`
-4. Lock your app with a password or gesture in settings for privacy
+2. Extract `SereneSetup.exe`
+3. Run the installer — choose the install folder and whether to add a desktop shortcut
+4. Launch Serene from the Start Menu or desktop shortcut
+5. Optionally lock the app with slide, password, or a 4-digit code in Settings
 
 ## Files & Folder Structure
 
