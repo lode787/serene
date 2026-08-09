@@ -1,285 +1,43 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="dark" data-glass-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Page not found">
-    <meta name="theme-color" content="#0c0a14">
+    <meta name="theme-color" content="#0a0812">
     <title>404 - Page Not Found | Serene</title>
     <link rel="icon" type="image/x-icon" href="/icons/favicon.ico">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-        :root,
-        [data-theme="dark"] {
-            --bg-0: #0c0a14;
-            --bg-1: #15122a;
-            --surface: rgba(255, 255, 255, 0.06);
-            --border: rgba(255, 255, 255, 0.1);
-            --border-strong: rgba(255, 255, 255, 0.18);
-            --text: #f4f2fb;
-            --text-muted: #a8a0c0;
-            --primary: #8b7cf6;
-            --accent: #c084fc;
-            --cyan: #67e8f9;
-            --glow: rgba(139, 124, 246, 0.35);
-            --seg-bg: rgba(255, 255, 255, 0.06);
-            --seg-active: #8b7cf6;
-            --orb-1: rgba(139, 124, 246, 0.22);
-            --orb-2: rgba(103, 232, 249, 0.12);
-            color-scheme: dark;
-        }
-
-        [data-theme="light"] {
-            --bg-0: #eef0fb;
-            --bg-1: #e4e7f8;
-            --surface: rgba(255, 255, 255, 0.78);
-            --border: rgba(90, 80, 140, 0.12);
-            --border-strong: rgba(90, 80, 140, 0.2);
-            --text: #1e1a32;
-            --text-muted: #5c5678;
-            --primary: #7c6aef;
-            --accent: #a855f7;
-            --cyan: #22d3ee;
-            --glow: rgba(124, 106, 239, 0.25);
-            --seg-bg: rgba(255, 255, 255, 0.65);
-            --seg-active: #7c6aef;
-            --orb-1: rgba(124, 106, 239, 0.18);
-            --orb-2: rgba(34, 211, 238, 0.12);
-            color-scheme: light;
-        }
-
-        body {
-            font-family: 'Outfit', sans-serif;
-            background: var(--bg-0);
-            color: var(--text);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-            transition: background 0.45s ease, color 0.35s ease;
-            padding: 24px;
-        }
-
-        ::selection {
-            background: var(--primary);
-            color: #fff;
-        }
-
-        .ambient {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        .orb {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(80px);
-            animation: drift 16s ease-in-out infinite;
-        }
-
-        .orb-a {
-            width: 50vw; height: 50vw; max-width: 560px; max-height: 560px;
-            top: -20%; left: -10%;
-            background: var(--orb-1);
-        }
-
-        .orb-b {
-            width: 40vw; height: 40vw; max-width: 420px; max-height: 420px;
-            bottom: -10%; right: -8%;
-            background: var(--orb-2);
-            animation-delay: -7s;
-        }
-
-        @keyframes drift {
-            0%, 100% { transform: translate(0, 0); }
-            50% { transform: translate(4%, 5%); }
-        }
-
-        .theme-seg {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 10;
-            display: inline-flex;
-            padding: 4px;
-            border-radius: 999px;
-            background: var(--seg-bg);
-            border: 1px solid var(--border);
-            gap: 2px;
-            backdrop-filter: blur(12px);
-        }
-
-        .theme-seg button {
-            appearance: none;
-            border: none;
-            background: transparent;
-            color: var(--text-muted);
-            width: 36px;
-            height: 32px;
-            border-radius: 999px;
-            cursor: pointer;
-            display: grid;
-            place-items: center;
-            transition: background 0.25s ease, color 0.25s ease;
-        }
-
-        .theme-seg button.active {
-            background: var(--seg-active);
-            color: #fff;
-            box-shadow: 0 4px 14px var(--glow);
-        }
-
-        .theme-seg button svg { width: 16px; height: 16px; }
-
-        .card {
-            position: relative;
-            z-index: 2;
-            width: 100%;
-            max-width: 480px;
-            text-align: center;
-            padding: 48px 36px;
-            border-radius: 28px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            backdrop-filter: blur(18px);
-            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
-            animation: rise 0.7s ease both;
-        }
-
-        @keyframes rise {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .logo-wrap {
-            width: 88px;
-            height: 88px;
-            margin: 0 auto 20px;
-            border-radius: 24px;
-            display: grid;
-            place-items: center;
-            background: linear-gradient(145deg, rgba(139,124,246,0.2), rgba(103,232,249,0.12));
-            border: 1px solid var(--border);
-            position: relative;
-            cursor: pointer;
-            overflow: hidden;
-        }
-
-        .logo-wrap::before {
-            content: '';
-            position: absolute;
-            inset: -50%;
-            background: conic-gradient(from 0deg, transparent, var(--primary), transparent, var(--cyan), transparent);
-            opacity: 0.25;
-            animation: spin 10s linear infinite;
-        }
-
-        .lotus-mark {
-            position: relative;
-            z-index: 1;
-            width: 64px;
-            height: 64px;
-            overflow: visible;
-            isolation: isolate;
-            filter: drop-shadow(0 6px 14px var(--glow));
-        }
-
-        .lotus-mark .petal {
-            transform-box: view-box;
-            transform-origin: 128px 216px;
-            transform: scale(0.2);
-            opacity: 0;
-            transition:
-                transform 0.75s cubic-bezier(0.22, 1, 0.36, 1),
-                opacity 0.45s ease;
-            transition-delay: calc(var(--i) * 45ms);
-        }
-
-        .lotus-mark.is-bloomed .petal {
-            transform: scale(1);
-            opacity: 1;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        .code {
-            font-size: clamp(4.5rem, 16vw, 6.5rem);
-            font-weight: 800;
-            line-height: 1;
-            letter-spacing: -0.04em;
-            background: linear-gradient(120deg, var(--primary), var(--accent), var(--cyan));
-            background-size: 200% 200%;
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: sheen 6s ease infinite;
-            margin-bottom: 8px;
-        }
-
-        @keyframes sheen {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-        }
-
-        h1 {
-            font-size: 1.75rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            margin-bottom: 10px;
-        }
-
-        p {
-            color: var(--text-muted);
-            font-size: 1.02rem;
-            line-height: 1.7;
-            margin-bottom: 28px;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 14px 26px;
-            border-radius: 14px;
-            font-family: inherit;
-            font-size: 0.98rem;
-            font-weight: 600;
-            text-decoration: none;
-            color: #fff;
-            background: linear-gradient(120deg, #8b7cf6, #6d5ef5 45%, #5b8def);
-            box-shadow: 0 10px 30px var(--glow);
-            transition: transform 0.25s ease, box-shadow 0.25s ease;
-        }
-
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 16px 36px var(--glow);
-        }
-
-        .btn svg { width: 18px; height: 18px; }
-
-        @media (max-width: 480px) {
-            .card { padding: 36px 22px; }
-        }
-    </style>
+    <link rel="stylesheet" href="/assets/glass.css">
+    <link rel="stylesheet" href="/assets/site.css">
 </head>
-<body>
+<body class="page-404">
+    <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+      <defs>
+        <filter id="glass-refract" x="-20%" y="-20%" width="140%" height="140%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.009 0.013" numOctaves="2" seed="9" result="noise" />
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="48" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+        <filter id="glass-specular" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur in="SourceAlpha" stdDeviation="5" result="bump"/>
+          <feSpecularLighting in="bump" surfaceScale="12" specularConstant="1.3" specularExponent="18" lighting-color="#ffffff" result="spec">
+            <fePointLight x="120" y="-30" z="120"/>
+          </feSpecularLighting>
+          <feComposite in="spec" in2="SourceAlpha" operator="in"/>
+        </filter>
+      </defs>
+    </svg>
+
     <div class="ambient" aria-hidden="true">
         <div class="orb orb-a"></div>
         <div class="orb orb-b"></div>
+        <div class="orb orb-c"></div>
     </div>
+    <div class="noise" aria-hidden="true"></div>
 
-    <div class="theme-seg" role="group" aria-label="Theme">
+    <div class="theme-seg glass glass--l2 glass-pill" role="group" aria-label="Theme">
         <button type="button" data-theme-set="dark" title="Dark" aria-label="Dark theme">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
@@ -291,97 +49,141 @@
         </button>
     </div>
 
-    <div class="card">
-        <div class="logo-wrap" id="logo-wrap" role="button" tabindex="0" aria-label="Replay lotus bloom">
-            <svg class="lotus-mark" id="lotus-svg" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Serene">
-                <defs>
-                    <radialGradient id="petalGrad" gradientUnits="userSpaceOnUse" cx="128" cy="216" r="182">
-                        <stop offset="0%" stop-color="#A9F2FA"/>
-                        <stop offset="20%" stop-color="#A5EEF9"/>
-                        <stop offset="40%" stop-color="#BEE5F9"/>
-                        <stop offset="60%" stop-color="#CADBFB"/>
-                        <stop offset="80%" stop-color="#D5D6FB"/>
-                        <stop offset="100%" stop-color="#EEE6FC"/>
-                    </radialGradient>
-                </defs>
-                <path class="petal" style="--i:2" fill="url(#petalGrad)" fill-opacity="0.88" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="1"
-                    d="M128 38 C166 68 194 140 128 216 C62 140 90 68 128 38 Z"/>
-                <path class="petal" style="--i:1" fill="url(#petalGrad)" fill-opacity="0.88" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="1"
-                    d="M35 86 C108 118 142 172 128 216 C50 202 29 140 35 86 Z"/>
-                <path class="petal" style="--i:3" fill="url(#petalGrad)" fill-opacity="0.88" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="1"
-                    d="M221 86 C148 118 114 172 128 216 C206 202 227 140 221 86 Z"/>
-                <path class="petal" style="--i:0" fill="url(#petalGrad)" fill-opacity="0.88" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="1"
-                    d="M2 156 C36 142 104 152 128 216 C78 227 20 204 2 156 Z"/>
-                <path class="petal" style="--i:4" fill="url(#petalGrad)" fill-opacity="0.88" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="1"
-                    d="M254 156 C220 142 152 152 128 216 C178 227 236 204 254 156 Z"/>            </svg>
+    <main>
+        <div class="card-404 glass glass--l2 glass--l3 glass--clear glass--fresnel glass-card">
+            <div class="logo-mini glass glass--l2 glass--l3" id="logo-wrap" role="button" tabindex="0" aria-label="Replay lotus bloom">
+                <svg class="lotus-mark" id="lotus-svg" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Serene">
+                    <defs>
+                        <radialGradient id="petalGrad" gradientUnits="userSpaceOnUse" cx="128" cy="216" r="182">
+                            <stop offset="0%" stop-color="#A9F2FA"/>
+                            <stop offset="50%" stop-color="#CADBFB"/>
+                            <stop offset="100%" stop-color="#EEE6FC"/>
+                        </radialGradient>
+                    </defs>
+                    <path class="petal" style="--i:2" fill="url(#petalGrad)" fill-opacity="0.88" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="1" d="M128 38 C166 68 194 140 128 216 C62 140 90 68 128 38 Z"/>
+                    <path class="petal" style="--i:1" fill="url(#petalGrad)" fill-opacity="0.88" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="1" d="M35 86 C108 118 142 172 128 216 C50 202 29 140 35 86 Z"/>
+                    <path class="petal" style="--i:3" fill="url(#petalGrad)" fill-opacity="0.88" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="1" d="M221 86 C148 118 114 172 128 216 C206 202 227 140 221 86 Z"/>
+                    <path class="petal" style="--i:0" fill="url(#petalGrad)" fill-opacity="0.88" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="1" d="M2 156 C36 142 104 152 128 216 C78 227 20 204 2 156 Z"/>
+                    <path class="petal" style="--i:4" fill="url(#petalGrad)" fill-opacity="0.88" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="1" d="M254 156 C220 142 152 152 128 216 C178 227 236 204 254 156 Z"/>
+                </svg>
+            </div>
+            <div class="code">404</div>
+            <h1>Page not found</h1>
+            <p>This page seems to have wandered off. Let’s bring you back to the calm.</p>
+            <a href="/" class="btn btn-primary glass glass--l2 glass-button glass-button--prominent">Return Home</a>
         </div>
-        <div class="code">404</div>
-        <h1>Page not found</h1>
-        <p>This page seems to have wandered off. Let's bring you back to the calm.</p>
-        <a href="/" class="btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-            Return Home
-        </a>
-    </div>
+    </main>
 
     <script>
         (function () {
             const root = document.documentElement;
-            const metaTheme = document.querySelector('meta[name="theme-color"]');
+            const meta = document.querySelector('meta[name="theme-color"]');
             const buttons = document.querySelectorAll('[data-theme-set]');
-            const mq = window.matchMedia('(prefers-color-scheme: dark)');
+            const mq = matchMedia('(prefers-color-scheme: dark)');
+            let pref = localStorage.getItem('serene-theme') || 'system';
 
-            function resolved(pref) {
-                if (pref === 'system') return mq.matches ? 'dark' : 'light';
-                return pref;
+            function resolved(p) {
+                if (p === 'system') return mq.matches ? 'dark' : 'light';
+                return p;
             }
 
-            function apply(pref) {
-                const theme = resolved(pref);
-                root.setAttribute('data-theme', theme);
-                if (metaTheme) metaTheme.setAttribute('content', theme === 'dark' ? '#0c0a14' : '#eef0fb');
-                buttons.forEach((btn) => btn.classList.toggle('active', btn.dataset.themeSet === pref));
+            function apply(p) {
+                const t = resolved(p);
+                root.setAttribute('data-theme', t);
+                root.setAttribute('data-glass-theme', t);
+                if (meta) meta.setAttribute('content', t === 'dark' ? '#0a0812' : '#e8eaf8');
+                buttons.forEach(function (b) { b.classList.toggle('active', b.dataset.themeSet === p); });
             }
 
-            let preference = localStorage.getItem('serene-theme') || 'system';
-            apply(preference);
-
-            buttons.forEach((btn) => {
-                btn.addEventListener('click', () => {
-                    preference = btn.dataset.themeSet;
-                    localStorage.setItem('serene-theme', preference);
-                    apply(preference);
+            apply(pref);
+            buttons.forEach(function (b) {
+                b.addEventListener('click', function () {
+                    pref = b.dataset.themeSet;
+                    localStorage.setItem('serene-theme', pref);
+                    apply(pref);
                 });
             });
-
-            mq.addEventListener('change', () => {
-                if (preference === 'system') apply('system');
-            });
+            mq.addEventListener('change', function () { if (pref === 'system') apply('system'); });
 
             const wrap = document.getElementById('logo-wrap');
             const lotus = document.getElementById('lotus-svg');
-            let blooming = false;
+            const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+            let bloomGen = 0;
+            let breatheAnims = [];
 
-            function bloom() {
-                if (blooming) return;
-                blooming = true;
-                lotus.classList.remove('is-bloomed');
-                void lotus.offsetWidth;
-                requestAnimationFrame(() => {
-                    lotus.classList.add('is-bloomed');
-                    setTimeout(() => { blooming = false; }, 850);
+            function petals() {
+                return lotus ? Array.from(lotus.querySelectorAll('.petal')) : [];
+            }
+
+            function stopBreathing() {
+                breatheAnims.forEach(function (a) { try { a.cancel(); } catch (e) {} });
+                breatheAnims = [];
+            }
+
+            function startBreathing(gen) {
+                if (gen !== bloomGen || reduceMotion.matches) return;
+                stopBreathing();
+                petals().forEach(function (petal) {
+                    var i = parseFloat(getComputedStyle(petal).getPropertyValue('--i')) || 0;
+                    breatheAnims.push(petal.animate(
+                        [
+                            { transform: 'scale(1)' },
+                            { transform: 'scale(1.025)' },
+                            { transform: 'scale(1)' }
+                        ],
+                        { duration: 4800, delay: i * 80, iterations: Infinity, easing: 'ease-in-out' }
+                    ));
                 });
             }
 
+            function bloom() {
+                if (!lotus) return;
+                var gen = ++bloomGen;
+                stopBreathing();
+                var list = petals();
+                list.forEach(function (petal) {
+                    petal.getAnimations().forEach(function (a) { try { a.cancel(); } catch (e) {} });
+                    petal.style.transform = '';
+                    petal.style.opacity = '';
+                });
+                if (reduceMotion.matches) {
+                    list.forEach(function (petal) {
+                        petal.style.transform = 'scale(1)';
+                        petal.style.opacity = '1';
+                    });
+                    return;
+                }
+                Promise.all(list.map(function (petal) {
+                    var i = parseFloat(getComputedStyle(petal).getPropertyValue('--i')) || 0;
+                    return petal.animate(
+                        [
+                            { transform: 'scale(0.2)', opacity: 0 },
+                            { transform: 'scale(1)', opacity: 1 }
+                        ],
+                        {
+                            duration: 780,
+                            delay: i * 55,
+                            easing: 'cubic-bezier(0.23, 1, 0.32, 1)',
+                            fill: 'forwards'
+                        }
+                    ).finished.catch(function () {});
+                })).then(function () {
+                    if (gen !== bloomGen) return;
+                    list.forEach(function (petal) {
+                        petal.getAnimations().forEach(function (a) { try { a.cancel(); } catch (e) {} });
+                        petal.style.transform = 'scale(1)';
+                        petal.style.opacity = '1';
+                    });
+                    startBreathing(gen);
+                });
+            }
             setTimeout(bloom, 200);
             wrap.addEventListener('click', bloom);
-            wrap.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    bloom();
-                }
+            wrap.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); bloom(); }
             });
         })();
     </script>
 </body>
 </html>
+

@@ -13,3 +13,15 @@ Serene app/
 serene-app/node_modules/
 serene-app/dist/
 serene-app/release/
+
+# Android (Capacitor)
+serene-android/node_modules/
+serene-android/www/
+serene-android/*.keystore
+serene-android/*.jks
+serene-android/keystore.properties
+serene-android/android/.gradle/
+serene-android/android/app/build/
+serene-android/android/build/
+serene-android/android/local.properties
+serene-android/android/captures/
