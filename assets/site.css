@@ -536,26 +536,16 @@ main {
   line-height: 1.6;
 }
 
-/* Screenshot carousel — glass on image only; title rides with the slide */
-.section--showcase {
-  position: relative;
-  z-index: 2;
-  padding-left: 0;
-  padding-right: 0;
-}
-
-.section--showcase .section-head {
-  padding: 0 var(--pad);
-}
-
+/* Screenshots — centered, capped preview (click opens the full image) */
 .shot-carousel {
-  --shot-gap: clamp(16px, 2.5vw, 28px);
-  --shot-pad: max(var(--pad), calc((100vw - min(1120px, 94vw)) / 2));
+  --shot-gap: 12px;
+  container-type: inline-size;
+  width: min(100%, 500px);
+  margin-inline: auto;
   display: flex;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory;
-  scroll-padding-inline: var(--shot-pad);
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: var(--accent) transparent;
@@ -564,17 +554,25 @@ main {
 .shot-track {
   display: flex;
   gap: var(--shot-gap);
-  padding: 8px var(--shot-pad) 4px;
+  padding: 4px 0;
   width: max-content;
 }
 
 .shot-slide {
-  flex: 0 0 min(58vw, 620px);
-  scroll-snap-align: center;
+  flex: 0 0 500px;
+  width: 500px;
+  scroll-snap-align: start;
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
+}
+
+@supports (width: 1cqi) {
+  .shot-slide {
+    flex-basis: 100cqi;
+    width: 100cqi;
+  }
 }
 
 .shot-frame {
@@ -599,6 +597,8 @@ main {
   z-index: 1;
   display: block;
   width: 100%;
+  max-width: 100%;
+  height: auto;
   aspect-ratio: 1919 / 1000;
   object-fit: cover;
   object-position: top center;
@@ -1075,7 +1075,6 @@ main {
   .download-platforms { grid-template-columns: 1fr; }
   .logo-stage { order: -1; min-height: 280px; }
   .logo-core { width: min(240px, 64vw); --glass-radius: 28px; }
-  .shot-slide { flex-basis: min(86vw, 520px); }
 }
 
 @media (max-width: 720px) {
