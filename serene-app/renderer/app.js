@@ -121,6 +121,25 @@ if (!Array.isArray(state.goals)) state.goals = [];
 if (!state.settings.afkUnlockMode || !['slide', 'password', 'pin'].includes(state.settings.afkUnlockMode)) {
   state.settings.afkUnlockMode = state.settings.afkPassword ? 'password' : 'slide';
 }
+// Phones: default AFK off once (system lock exists), but allow user to turn it on for PIN lock
+try {
+  const androidShell = document.documentElement.classList.contains('is-android')
+    || /Android/i.test(navigator.userAgent || '')
+    || (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  if (androidShell) {
+    const initKey = 'serene_afk_android_init_v1';
+    if (!localStorage.getItem(initKey)) {
+      localStorage.setItem(initKey, '1');
+      if (state.settings.afkEnabled) {
+        state.settings.afkEnabled = false;
+        save(STORAGE.settings, state.settings);
+      }
+    }
+    // #region agent log
+    fetch('http://127.0.0.1:7689/ingest/0528c326-7e6c-4e3b-8ba0-8f4cad278754', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e92032' }, body: JSON.stringify({ sessionId: 'e92032', runId: 'pin-fix2', hypothesisId: 'afk-gate', location: 'app.js:init', message: 'afk-android-state', data: { afkEnabled: !!state.settings.afkEnabled, unlockMode: state.settings.afkUnlockMode }, timestamp: Date.now() }) }).catch(() => {});
+    // #endregion
+  }
+} catch (e) {}
 // Sync tray preference to main process
 try { if (window.serene && window.serene.setTray) window.serene.setTray(!!state.settings.minimizeToTray); } catch (e) {}
 save(STORAGE.settings, state.settings);
@@ -177,6 +196,37 @@ function render() {
   else if (state.view === 'patchnotes') content.appendChild(viewPatchNotes());
   else if (state.view === 'about') content.appendChild(viewAbout());
   root.appendChild(content);
+  // #region agent log
+  try {
+    requestAnimationFrame(() => {
+      const topbar = document.querySelector('.topbar');
+      const content = document.querySelector('.content');
+      const notes = document.querySelector('.notes-panel');
+      const modal = document.querySelector('.modal');
+      const cs = getComputedStyle(document.documentElement);
+      const payload = {
+        sessionId: 'e92032', runId: 'post-fix', hypothesisId: 'status-scroll',
+        location: 'app.js:render', message: 'layout-safearea-scroll',
+        data: {
+          view: state.view,
+          detailKey: state.detailKey,
+          vw: window.innerWidth, vh: window.innerHeight,
+          safeTop: cs.getPropertyValue('env(safe-area-inset-top)') || null,
+          paddingTopApp: content ? getComputedStyle(document.getElementById('app')).paddingTop : null,
+          topbarRect: topbar ? { top: topbar.getBoundingClientRect().top, height: topbar.getBoundingClientRect().height, padTop: getComputedStyle(topbar).paddingTop } : null,
+          statusPad: cs.getPropertyValue('--serene-status-pad') || document.documentElement.style.getPropertyValue('--serene-status-pad'),
+          dpr: window.devicePixelRatio,
+          innerW: window.innerWidth,
+          contentScroll: content ? { sh: content.scrollHeight, ch: content.clientWidth, clientH: content.clientHeight, canScroll: content.scrollHeight > content.clientHeight + 2, oy: getComputedStyle(content).overflowY } : null,
+          notesRect: notes ? { top: notes.getBoundingClientRect().top, visible: notes.getBoundingClientRect().top < window.innerHeight } : null,
+          modalScroll: modal ? { sh: modal.scrollHeight, ch: modal.clientHeight, canScroll: modal.scrollHeight > modal.clientHeight + 2 } : null,
+        },
+        timestamp: Date.now(),
+      };
+      fetch('http://127.0.0.1:7689/ingest/0528c326-7e6c-4e3b-8ba0-8f4cad278754', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e92032' }, body: JSON.stringify(payload) }).catch(() => {});
+    });
+  } catch (e) {}
+  // #endregion
 }
 
 function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -314,64 +364,275 @@ function pinKeyboardEntry({ onComplete, statusKey, className }) {
   const box = el('div', 'pin-setup' + (className ? ' ' + className : ''));
   box.tabIndex = 0;
   let buf = '';
+  const usePad = isMobileUi();
   const status = el('div', 'pin-status muted', statusKey ? t(statusKey) : t('settings.pinEnter'));
-  const hint = el('div', 'pin-hint muted', t('settings.pinKeyboard'));
+  const hint = el('div', 'pin-hint muted', usePad ? t('settings.pinPad') : t('settings.pinKeyboard'));
   const slots = el('div', 'pin-slots');
   const slotEls = [0, 1, 2, 3].map(() => {
     const s = el('div', 'pin-slot');
     slots.appendChild(s);
     return s;
   });
+  // Soft keyboard helper (desktop / optional). On Android we primarily use the on-screen pad.
+  const hidden = document.createElement('input');
+  hidden.type = 'tel';
+  hidden.inputMode = 'numeric';
+  hidden.setAttribute('inputmode', 'numeric');
+  hidden.pattern = '[0-9]*';
+  hidden.autocomplete = 'one-time-code';
+  hidden.setAttribute('enterkeyhint', 'done');
+  hidden.maxLength = 4;
+  hidden.className = 'pin-hidden-input' + (usePad ? ' pin-hidden-input--aside' : '');
+  hidden.setAttribute('aria-label', 'PIN');
+  hidden.setAttribute('autocapitalize', 'off');
+  hidden.setAttribute('autocorrect', 'off');
+  hidden.spellcheck = false;
   const paint = () => {
     slotEls.forEach((s, i) => {
       s.textContent = buf[i] ? '•' : '';
       s.classList.toggle('filled', !!buf[i]);
       s.classList.toggle('active', i === buf.length && buf.length < 4);
     });
+    if (hidden.value !== buf) hidden.value = buf;
   };
   const setStatus = (key) => { status.textContent = t(key); };
+  const focusPin = () => {
+    if (usePad) return;
+    try {
+      hidden.focus({ preventScroll: false });
+      // #region agent log
+      fetch('http://127.0.0.1:7689/ingest/0528c326-7e6c-4e3b-8ba0-8f4cad278754', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e92032' }, body: JSON.stringify({ sessionId: 'e92032', runId: 'pin-fix2', hypothesisId: 'pin-kb', location: 'app.js:focusPin', message: 'pin-focus', data: { active: document.activeElement === hidden, usePad }, timestamp: Date.now() }) }).catch(() => {});
+      // #endregion
+    } catch (e) {}
+  };
   const reset = (key) => {
     buf = '';
     paint();
     if (key) setStatus(key);
+    focusPin();
+  };
+  const finishIfReady = () => {
+    if (buf.length === 4 && onComplete) {
+      onComplete(buf, {
+        reset, setStatus, shake: () => {
+          box.classList.add('shake');
+          setTimeout(() => box.classList.remove('shake'), 300);
+        },
+      });
+    }
+  };
+  const pushDigit = (d) => {
+    if (buf.length >= 4) return;
+    buf += String(d);
+    paint();
+    // #region agent log
+    fetch('http://127.0.0.1:7689/ingest/0528c326-7e6c-4e3b-8ba0-8f4cad278754', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e92032' }, body: JSON.stringify({ sessionId: 'e92032', runId: 'pin-fix2', hypothesisId: 'pin-pad', location: 'app.js:pushDigit', message: 'pin-digit', data: { len: buf.length, usePad }, timestamp: Date.now() }) }).catch(() => {});
+    // #endregion
+    finishIfReady();
+  };
+  const backspace = () => {
+    buf = buf.slice(0, -1);
+    paint();
   };
   const onKey = (e) => {
     if (e.key >= '0' && e.key <= '9') {
       e.preventDefault();
-      if (buf.length >= 4) return;
-      buf += e.key;
-      paint();
-      if (buf.length === 4 && onComplete) onComplete(buf, { reset, setStatus, shake: () => {
-        box.classList.add('shake');
-        setTimeout(() => box.classList.remove('shake'), 300);
-      }});
+      pushDigit(e.key);
     } else if (e.key === 'Backspace') {
       e.preventDefault();
-      buf = buf.slice(0, -1);
-      paint();
+      backspace();
     }
   };
-  // Capture keyboard even if focus drifts (AFK lock / settings)
+  hidden.oninput = () => {
+    const digits = String(hidden.value || '').replace(/\D/g, '').slice(0, 4);
+    if (digits === buf) return;
+    buf = digits;
+    paint();
+    finishIfReady();
+  };
   const onDocKey = (e) => {
     if (!document.body.contains(box)) {
       document.removeEventListener('keydown', onDocKey, true);
       return;
     }
     const tag = (e.target && e.target.tagName) || '';
-    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') {
+      if (e.target === hidden) onKey(e);
+      return;
+    }
     onKey(e);
   };
   document.addEventListener('keydown', onDocKey, true);
-  box.addEventListener('click', () => box.focus());
+
   box.appendChild(status);
   box.appendChild(slots);
   box.appendChild(hint);
+
+  if (usePad) {
+    const pad = el('div', 'pin-pad');
+    const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', '✓'];
+    keys.forEach((label) => {
+      const btn = el('button', 'pin-pad-key' + (label === '⌫' || label === '✓' ? ' pin-pad-key--action' : ''), label);
+      btn.type = 'button';
+      btn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (label === '⌫') backspace();
+        else if (label === '✓') finishIfReady();
+        else pushDigit(label);
+      };
+      pad.appendChild(btn);
+    });
+    box.appendChild(pad);
+  } else {
+    box.addEventListener('pointerdown', focusPin);
+    box.addEventListener('click', focusPin);
+    slots.addEventListener('click', focusPin);
+    box.appendChild(hidden);
+    requestAnimationFrame(() => focusPin());
+    setTimeout(focusPin, 120);
+  }
+
   paint();
-  setTimeout(() => box.focus(), 40);
-  return { root: box, reset, setStatus, focus: () => box.focus() };
+  // #region agent log
+  try {
+    fetch('http://127.0.0.1:7689/ingest/0528c326-7e6c-4e3b-8ba0-8f4cad278754', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e92032' }, body: JSON.stringify({ sessionId: 'e92032', runId: 'pin-fix2', hypothesisId: 'pin-pad', location: 'app.js:pinKeyboardEntry', message: 'pin-created', data: { usePad, afkEnabled: !!(state.settings && state.settings.afkEnabled) }, timestamp: Date.now() }) }).catch(() => {});
+  } catch (e) {}
+  // #endregion
+  return { root: box, reset, setStatus, focus: focusPin };
+}
+
+function navIcon(name) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'nav-ico');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('fill', 'none');
+  path.setAttribute('stroke', 'currentColor');
+  path.setAttribute('stroke-width', '1.8');
+  path.setAttribute('stroke-linecap', 'round');
+  path.setAttribute('stroke-linejoin', 'round');
+  const paths = {
+    today: 'M12 3v2M12 19v2M5 12H3M21 12h-2M6.3 6.3l-1.4-1.4M19.1 19.1l-1.4-1.4M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4M12 7a5 5 0 100 10 5 5 0 000-10z',
+    month: 'M7 3v2M17 3v2M4 9h16M6 5h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2z',
+    graphs: 'M4 19V5M4 19h16M8 15l3-4 3 2 4-6',
+    habits: 'M5 12l4 4L19 6',
+    goals: 'M12 21a9 9 0 100-18 9 9 0 000 18zM12 17a5 5 0 100-10 5 5 0 000 10zM12 13a1 1 0 100-2 1 1 0 000 2z',
+    settings: 'M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7zM19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9c.3.6.9 1 1.5 1.1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z',
+    patchnotes: 'M8 6h8M8 10h8M8 14h5M7 3h10a2 2 0 012 2v14l-4-2-4 2-4-2-4 2V5a2 2 0 012-2z',
+    about: 'M12 21a9 9 0 100-18 9 9 0 000 18zM12 11v5M12 8h.01',
+  };
+  path.setAttribute('d', paths[name] || paths.about);
+  svg.appendChild(path);
+  return svg;
+}
+
+function isMobileUi() {
+  try {
+    if (window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) return true;
+  } catch (e) {}
+  if (document.documentElement.classList.contains('is-android') || document.body.classList.contains('is-android')) return true;
+  if (/Android/i.test(navigator.userAgent || '')) return true;
+  try {
+    if (window.serene && typeof window.serene.isAndroid === 'function' && window.serene.isAndroid()) return true;
+  } catch (e) {}
+  return window.matchMedia('(max-width: 820px)').matches;
+}
+
+function closeNavDrawer() {
+  document.body.classList.remove('nav-open');
+  const d = document.getElementById('nav-drawer');
+  const s = document.getElementById('nav-scrim');
+  if (d) d.classList.remove('open');
+  if (s) s.classList.remove('open');
 }
 
 function sidebar() {
+  const items = [
+    ['today', 'today', 'nav.today'],
+    ['month', 'month', 'nav.month'],
+    ['graphs', 'graphs', 'nav.graphs'],
+    ['habits', 'habits', 'nav.habits'],
+    ['goals', 'goals', 'nav.goals'],
+    ['settings', 'settings', 'nav.settings'],
+    ['patchnotes', 'patchnotes', 'nav.patchnotes'],
+    ['about', 'about', 'nav.about'],
+  ];
+
+  if (isMobileUi()) {
+    const wrap = el('div', 'mobile-chrome');
+    const top = el('header', 'topbar');
+    // Inline pad — WebView safe-area/CSS vars are unreliable under the status bar
+    try {
+      top.style.paddingTop = '80px';
+    } catch (e) {
+      top.style.paddingTop = '80px';
+    }
+    const brand = el('div', 'brand brand-compact');
+    const logo = document.createElement('img');
+    logo.className = 'brand-logo';
+    logo.src = 'logo.png';
+    logo.alt = '';
+    brand.appendChild(logo);
+    brand.appendChild(el('span', 'brand-name', 'Serene'));
+    top.appendChild(brand);
+    const burger = el('button', 'burger-btn');
+    burger.type = 'button';
+    burger.setAttribute('aria-label', 'Menu');
+    burger.innerHTML = '<span></span><span></span><span></span>';
+    burger.onclick = () => {
+      document.body.classList.add('nav-open');
+      const d = document.getElementById('nav-drawer');
+      const s = document.getElementById('nav-scrim');
+      if (d) d.classList.add('open');
+      if (s) s.classList.add('open');
+      // #region agent log
+      try {
+        requestAnimationFrame(() => {
+          const brand = d && d.querySelector('.brand');
+          const logo = d && d.querySelector('.brand-logo');
+          const br = brand ? brand.getBoundingClientRect() : null;
+          const lr = logo ? logo.getBoundingClientRect() : null;
+          fetch('http://127.0.0.1:7689/ingest/0528c326-7e6c-4e3b-8ba0-8f4cad278754', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e92032' }, body: JSON.stringify({ sessionId: 'e92032', runId: 'bug-batch', hypothesisId: 'drawer-pad', location: 'app.js:burger', message: 'drawer-open', data: { padTop: d ? getComputedStyle(d).paddingTop : null, brandTop: br && br.top, logoTop: lr && lr.top, vh: window.innerHeight }, timestamp: Date.now() }) }).catch(() => {});
+        });
+      } catch (e) {}
+      // #endregion
+    };
+    top.appendChild(burger);
+    wrap.appendChild(top);
+
+    const scrim = el('div', 'nav-scrim');
+    scrim.id = 'nav-scrim';
+    scrim.onclick = () => closeNavDrawer();
+    wrap.appendChild(scrim);
+
+    const drawer = el('aside', 'nav-drawer');
+    drawer.id = 'nav-drawer';
+    try { drawer.style.paddingTop = 'max(88px, calc(env(safe-area-inset-top, 0px) + 56px))'; } catch (e) {
+      try { drawer.style.paddingTop = '88px'; } catch (e2) {}
+    }
+    const dBrand = el('div', 'brand');
+    const dLogo = document.createElement('img');
+    dLogo.className = 'brand-logo';
+    dLogo.src = 'logo.png';
+    dLogo.alt = '';
+    dBrand.appendChild(dLogo);
+    dBrand.appendChild(el('span', 'brand-name', 'Serene'));
+    drawer.appendChild(dBrand);
+    items.forEach(([v, icon, key]) => {
+      const b = el('button', 'nav-btn' + (state.view === v ? ' active' : ''));
+      b.type = 'button';
+      b.appendChild(navIcon(icon));
+      b.appendChild(el('span', '', t(key)));
+      b.onclick = () => { state.view = v; state.detailKey = null; closeNavDrawer(); render(); };
+      drawer.appendChild(b);
+    });
+    drawer.appendChild(el('div', 'sidebar-foot', t('sidebar.foot')));
+    wrap.appendChild(drawer);
+    return wrap;
+  }
+
   const s = el('aside', 'sidebar');
   const brand = el('div', 'brand');
   const logo = document.createElement('img');
@@ -381,19 +642,10 @@ function sidebar() {
   brand.appendChild(logo);
   brand.appendChild(el('span', 'brand-name', 'Serene'));
   s.appendChild(brand);
-  const items = [
-    ['today', '☀', 'nav.today'],
-    ['month', '⊞', 'nav.month'],
-    ['graphs', '∿', 'nav.graphs'],
-    ['habits', '✓', 'nav.habits'],
-    ['goals', '◎', 'nav.goals'],
-    ['settings', '⚙', 'nav.settings'],
-    ['patchnotes', '◈', 'nav.patchnotes'],
-    ['about', '❋', 'nav.about'],
-  ];
-  items.forEach(([v, i, key]) => {
+  items.forEach(([v, icon, key]) => {
     const b = el('button', 'nav-btn' + (state.view === v ? ' active' : ''));
-    b.appendChild(el('span', 'ico', i));
+    b.type = 'button';
+    b.appendChild(navIcon(icon));
     b.appendChild(el('span', '', t(key)));
     b.onclick = () => { state.view = v; state.detailKey = null; render(); };
     s.appendChild(b);
@@ -417,7 +669,7 @@ function viewToday() {
   const streak = computeStreak();
   if (streak > 0) {
     const sb = el('div', 'streak-badge', '');
-    sb.innerHTML = '<span class="flame">🔥</span><span class="streak-num">' + streak + '</span><span class="streak-lbl">' + t('today.dayStreak') + '</span>';
+    sb.innerHTML = '<span class="flame" aria-hidden="true"><svg class="nav-ico" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2c1.5 3 2 5 2 7a4 4 0 01-8 0c0-1 .2-2 .8-3.2C8.2 8 9 9.2 9.5 10.5 8 9 7 7.2 7 5.5 7 3.5 9 2 12 2zm0 20a7 7 0 007-7c0-3-2-5.5-4.2-7.4.4 1.3.2 2.6-.4 3.7C13.2 13 12 14 12 15.5A3.5 3.5 0 008.5 12c0 4.1 1.6 6.5 3.5 10z"/></svg></span><span class="streak-num">' + streak + '</span><span class="streak-lbl">' + t('today.dayStreak') + '</span>';
     sb.title = streak + ' ' + t('today.dayStreak');
     head.appendChild(sb);
   }
@@ -467,10 +719,23 @@ function viewToday() {
     entry.submittedAt = new Date().toISOString();
     save(STORAGE.entries, state.entries);
     if (!wasSubmitted) checkStreakMilestone();
-    state.view = 'month';
-    state.monthDate = new Date();
-    state.detailKey = entry.date;
+    // Stay on Today so the notes field is reachable; scroll it into view
+    state.view = 'today';
+    state.detailKey = null;
     render();
+    requestAnimationFrame(() => {
+      const notes = document.querySelector('.notes-panel');
+      const scroller = document.querySelector('.content');
+      if (notes && scroller) {
+        const top = notes.offsetTop - 12;
+        scroller.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+      }
+      // #region agent log
+      try {
+        fetch('http://127.0.0.1:7689/ingest/0528c326-7e6c-4e3b-8ba0-8f4cad278754', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e92032' }, body: JSON.stringify({ sessionId: 'e92032', runId: 'post-fix', hypothesisId: 'submit-notes', location: 'app.js:submit', message: 'after-submit-scroll', data: { hasNotes: !!notes, scrollTop: scroller ? scroller.scrollTop : null, canScroll: scroller ? scroller.scrollHeight > scroller.clientHeight + 2 : null }, timestamp: Date.now() }) }).catch(() => {});
+      } catch (e) {}
+      // #endregion
+    });
   };
   right.appendChild(submitBtn);
 
@@ -1765,10 +2030,10 @@ function viewSettings() {
   panel.appendChild(langRow);
 
   // theme
-  const themeRow = el('div', 'setting-row');
+  const themeRow = el('div', 'setting-row setting-row-stack');
   const tl = el('div', 'setting-label'); tl.appendChild(el('b', '', t('settings.theme'))); tl.appendChild(el('span', '', t('settings.themeHint')));
   themeRow.appendChild(tl);
-  const chips = el('div', 'chip-group');
+  const chips = el('div', 'chip-group chip-group-wrap');
   [
     ['dark', t('settings.dark')],
     ['light', t('settings.light')],
@@ -1782,10 +2047,10 @@ function viewSettings() {
   panel.appendChild(themeRow);
 
   // background
-  const bgRow = el('div', 'setting-row');
+  const bgRow = el('div', 'setting-row setting-row-stack');
   const bl = el('div', 'setting-label'); bl.appendChild(el('b', '', t('settings.bg'))); bl.appendChild(el('span', '', t('settings.bgHint')));
   bgRow.appendChild(bl);
-  const bgActions = el('div', 'row');
+  const bgActions = el('div', 'row wrap');
   const file = document.createElement('input'); file.type = 'file'; file.accept = 'image/*'; file.style.display = 'none';
   file.onchange = () => {
     const f = file.files && file.files[0]; if (!f) return;
@@ -1800,12 +2065,12 @@ function viewSettings() {
   panel.appendChild(bgRow);
 
   // NOTIFICATIONS
-  const nRow = el('div', 'setting-row');
+  const nRow = el('div', 'setting-row setting-row-stack');
   const nl = el('div', 'setting-label');
   nl.appendChild(el('b', '', t('settings.reminders')));
   nl.appendChild(el('span', '', t('settings.remindersHint')));
   nRow.appendChild(nl);
-  const nActs = el('div', 'row');
+  const nActs = el('div', 'row wrap');
   const tgl = el('label', 'switch');
   const cbx = document.createElement('input'); cbx.type = 'checkbox'; cbx.checked = !!state.settings.notifyEnabled;
   const sl = el('span', 'slider');
@@ -1825,12 +2090,12 @@ function viewSettings() {
   panel.appendChild(nRow);
 
   if (state.settings.notifyEnabled) {
-    const fRow = el('div', 'setting-row');
+    const fRow = el('div', 'setting-row setting-row-stack');
     const fl = el('div', 'setting-label');
     fl.appendChild(el('b', '', t('settings.freq')));
     fl.appendChild(el('span', '', t('settings.freqHint', { start: fmtHr(state.settings.notifyStart), end: fmtHr(state.settings.notifyEnd) })));
     fRow.appendChild(fl);
-    const fActs = el('div', 'row');
+    const fActs = el('div', 'row wrap');
     fActs.appendChild(glassSelect({
       value: state.settings.notifyEveryHours,
       options: [1, 2, 3, 4, 6, 8].map((h) => ({
@@ -1886,12 +2151,12 @@ function viewSettings() {
       c.onchange = () => on(c.checked);
       return sw;
     };
-    const streakRow = el('div', 'setting-row');
+    const streakRow = el('div', 'setting-row setting-row-stack');
     const srl = el('div', 'setting-label');
     srl.appendChild(el('b', '', t('settings.streakNotif')));
     srl.appendChild(el('span', '', t('settings.streakNotifHint')));
     streakRow.appendChild(srl);
-    const srActs = el('div', 'row');
+    const srActs = el('div', 'row wrap');
     const mLbl = el('label', 'inline-toggle');
     mLbl.appendChild(mkSwitch(state.settings.streakNotifyMilestone, (v) => { state.settings.streakNotifyMilestone = v; save(STORAGE.settings, state.settings); }));
     mLbl.appendChild(el('span', 'muted', t('settings.milestones')));
@@ -1903,35 +2168,41 @@ function viewSettings() {
     panel.appendChild(streakRow);
   }
 
-  // WINDOW BEHAVIOR
-  const wRow = el('div', 'setting-row');
-  const wl = el('div', 'setting-label');
-  wl.appendChild(el('b', '', t('settings.tray')));
-  wl.appendChild(el('span', '', t('settings.trayHint')));
-  wRow.appendChild(wl);
-  const wActs = el('div', 'row');
-  const wtgl = el('label', 'switch');
-  const wcbx = document.createElement('input'); wcbx.type = 'checkbox'; wcbx.checked = !!state.settings.minimizeToTray;
-  const wsl = el('span', 'slider');
-  wtgl.appendChild(wcbx); wtgl.appendChild(wsl);
-  wcbx.onchange = () => {
-    state.settings.minimizeToTray = wcbx.checked;
-    save(STORAGE.settings, state.settings);
-    try { window.serene && window.serene.setTray && window.serene.setTray(wcbx.checked); } catch (e) {}
-    render();
-  };
-  wActs.appendChild(wtgl);
-  wActs.appendChild(el('span', 'muted', state.settings.minimizeToTray ? t('settings.on') : t('settings.off')));
-  wRow.appendChild(wActs);
-  panel.appendChild(wRow);
+  // WINDOW BEHAVIOR (desktop Electron only — hide on Android / Chromebook / web)
+  const isAndroidUi = document.documentElement.classList.contains('is-android')
+    || (window.serene && window.serene.isAndroid && window.serene.isAndroid());
+  const isWebUi = document.documentElement.classList.contains('is-web')
+    || (window.serene && window.serene.isWeb && window.serene.isWeb());
+  if (!isAndroidUi && !isWebUi) {
+    const wRow = el('div', 'setting-row');
+    const wl = el('div', 'setting-label');
+    wl.appendChild(el('b', '', t('settings.tray')));
+    wl.appendChild(el('span', '', t('settings.trayHint')));
+    wRow.appendChild(wl);
+    const wActs = el('div', 'row');
+    const wtgl = el('label', 'switch');
+    const wcbx = document.createElement('input'); wcbx.type = 'checkbox'; wcbx.checked = !!state.settings.minimizeToTray;
+    const wsl = el('span', 'slider');
+    wtgl.appendChild(wcbx); wtgl.appendChild(wsl);
+    wcbx.onchange = () => {
+      state.settings.minimizeToTray = wcbx.checked;
+      save(STORAGE.settings, state.settings);
+      try { window.serene && window.serene.setTray && window.serene.setTray(wcbx.checked); } catch (e) {}
+      render();
+    };
+    wActs.appendChild(wtgl);
+    wActs.appendChild(el('span', 'muted', state.settings.minimizeToTray ? t('settings.on') : t('settings.off')));
+    wRow.appendChild(wActs);
+    panel.appendChild(wRow);
+  }
 
   // AFK LOCK
-  const aRow = el('div', 'setting-row');
+  const aRow = el('div', 'setting-row setting-row-stack');
   const al = el('div', 'setting-label');
   al.appendChild(el('b', '', t('settings.afk')));
   al.appendChild(el('span', '', t('settings.afkHint')));
   aRow.appendChild(al);
-  const aActs = el('div', 'row');
+  const aActs = el('div', 'row wrap');
   const atgl = el('label', 'switch');
   const acbx = document.createElement('input'); acbx.type = 'checkbox'; acbx.checked = !!state.settings.afkEnabled;
   const asl = el('span', 'slider');
@@ -1949,12 +2220,12 @@ function viewSettings() {
   panel.appendChild(aRow);
 
   if (state.settings.afkEnabled) {
-    const tRow = el('div', 'setting-row');
+    const tRow = el('div', 'setting-row setting-row-stack');
     const tl2 = el('div', 'setting-label');
     tl2.appendChild(el('b', '', t('settings.timeout')));
     tl2.appendChild(el('span', '', t('settings.timeoutHint')));
     tRow.appendChild(tl2);
-    const tActs = el('div', 'row');
+    const tActs = el('div', 'row wrap');
     tActs.appendChild(glassSelect({
       value: state.settings.afkTimeoutMin,
       options: [1, 2, 3, 5, 10, 15, 20, 30].map((n) => ({
@@ -1972,104 +2243,104 @@ function viewSettings() {
     tActs.appendChild(lockNow);
     tRow.appendChild(tActs);
     panel.appendChild(tRow);
+  }
 
-    // Unlock method
-    const modeRow = el('div', 'setting-row setting-row-stack');
-    const ml = el('div', 'setting-label');
-    ml.appendChild(el('b', '', t('settings.unlockMethod')));
-    ml.appendChild(el('span', '', t('settings.unlockMethodHint')));
-    modeRow.appendChild(ml);
-    const modeChips = el('div', 'chip-group');
-    [
-      ['slide', t('settings.unlockSlide')],
-      ['password', t('settings.unlockPassword')],
-      ['pin', t('settings.unlockPin')],
-    ].forEach(([val, label]) => {
-      const c = el('div', 'chip' + (state.settings.afkUnlockMode === val ? ' active' : ''), label);
-      c.onclick = () => {
-        state.settings.afkUnlockMode = val;
-        save(STORAGE.settings, state.settings);
-        render();
-      };
-      modeChips.appendChild(c);
+  // Unlock method + PIN/password always available (configure before enabling AFK)
+  const modeRow = el('div', 'setting-row setting-row-stack');
+  const ml = el('div', 'setting-label');
+  ml.appendChild(el('b', '', t('settings.unlockMethod')));
+  ml.appendChild(el('span', '', t('settings.unlockMethodHint')));
+  modeRow.appendChild(ml);
+  const modeChips = el('div', 'chip-group chip-group-wrap');
+  [
+    ['slide', t('settings.unlockSlide')],
+    ['password', t('settings.unlockPassword')],
+    ['pin', t('settings.unlockPin')],
+  ].forEach(([val, label]) => {
+    const c = el('div', 'chip' + (state.settings.afkUnlockMode === val ? ' active' : ''), label);
+    c.onclick = () => {
+      state.settings.afkUnlockMode = val;
+      save(STORAGE.settings, state.settings);
+      render();
+    };
+    modeChips.appendChild(c);
+  });
+  modeRow.appendChild(modeChips);
+  panel.appendChild(modeRow);
+
+  if (state.settings.afkUnlockMode === 'password') {
+    const pRow = el('div', 'setting-row setting-row-stack');
+    const pl = el('div', 'setting-label');
+    pl.appendChild(el('b', '', t('settings.password')));
+    pl.appendChild(el('span', '', state.settings.afkPassword ? t('settings.passwordSet') : t('settings.passwordNone')));
+    pRow.appendChild(pl);
+    const pActs = el('div', 'row wrap');
+    const pInp = document.createElement('input');
+    pInp.type = 'password';
+    pInp.className = 'glass-input';
+    pInp.placeholder = t('settings.passwordPlaceholder');
+    const pSave = el('button', 'btn btn-primary', state.settings.afkPassword ? t('settings.updatePwd') : t('settings.set'));
+    pSave.onclick = () => {
+      state.settings.afkPassword = pInp.value || '';
+      save(STORAGE.settings, state.settings);
+      render();
+    };
+    const pClear = el('button', 'btn btn-danger', t('settings.remove'));
+    pClear.onclick = () => { state.settings.afkPassword = ''; save(STORAGE.settings, state.settings); render(); };
+    pActs.appendChild(pInp); pActs.appendChild(pSave);
+    if (state.settings.afkPassword) pActs.appendChild(pClear);
+    pRow.appendChild(pActs);
+    panel.appendChild(pRow);
+  }
+
+  if (state.settings.afkUnlockMode === 'pin') {
+    const pinRow = el('div', 'setting-row setting-row-stack');
+    const pinL = el('div', 'setting-label');
+    pinL.appendChild(el('b', '', t('settings.pin')));
+    pinL.appendChild(el('span', '', state.settings.afkPin ? t('settings.pinSet') : t('settings.pinNone')));
+    pinRow.appendChild(pinL);
+    let pending = '';
+    let phase = 'enter';
+    const pin = pinKeyboardEntry({
+      statusKey: 'settings.pinEnter',
+      onComplete: (code, api) => {
+        if (phase === 'enter') {
+          pending = code;
+          phase = 'confirm';
+          api.reset('settings.pinConfirm');
+          return;
+        }
+        if (code === pending) {
+          state.settings.afkPin = code;
+          save(STORAGE.settings, state.settings);
+          showToast(t('settings.pin'), t('settings.pinSaved'));
+          render();
+        } else {
+          api.shake();
+          pending = '';
+          phase = 'enter';
+          api.setStatus('settings.pinMismatch');
+          setTimeout(() => api.reset('settings.pinEnter'), 500);
+        }
+      },
     });
-    modeRow.appendChild(modeChips);
-    panel.appendChild(modeRow);
-
-    if (state.settings.afkUnlockMode === 'password') {
-      const pRow = el('div', 'setting-row setting-row-stack');
-      const pl = el('div', 'setting-label');
-      pl.appendChild(el('b', '', t('settings.password')));
-      pl.appendChild(el('span', '', state.settings.afkPassword ? t('settings.passwordSet') : t('settings.passwordNone')));
-      pRow.appendChild(pl);
-      const pActs = el('div', 'row wrap');
-      const pInp = document.createElement('input');
-      pInp.type = 'password';
-      pInp.className = 'glass-input';
-      pInp.placeholder = t('settings.passwordPlaceholder');
-      const pSave = el('button', 'btn btn-primary', state.settings.afkPassword ? t('settings.updatePwd') : t('settings.set'));
-      pSave.onclick = () => {
-        state.settings.afkPassword = pInp.value || '';
-        save(STORAGE.settings, state.settings);
-        render();
-      };
-      const pClear = el('button', 'btn btn-danger', t('settings.remove'));
-      pClear.onclick = () => { state.settings.afkPassword = ''; save(STORAGE.settings, state.settings); render(); };
-      pActs.appendChild(pInp); pActs.appendChild(pSave);
-      if (state.settings.afkPassword) pActs.appendChild(pClear);
-      pRow.appendChild(pActs);
-      panel.appendChild(pRow);
+    if (state.settings.afkPin) {
+      const clearPin = el('button', 'btn btn-danger', t('settings.remove'));
+      clearPin.onclick = () => { state.settings.afkPin = ''; save(STORAGE.settings, state.settings); render(); };
+      pin.root.appendChild(clearPin);
     }
-
-    if (state.settings.afkUnlockMode === 'pin') {
-      const pinRow = el('div', 'setting-row setting-row-stack');
-      const pinL = el('div', 'setting-label');
-      pinL.appendChild(el('b', '', t('settings.pin')));
-      pinL.appendChild(el('span', '', state.settings.afkPin ? t('settings.pinSet') : t('settings.pinNone')));
-      pinRow.appendChild(pinL);
-      let pending = '';
-      let phase = 'enter';
-      const pin = pinKeyboardEntry({
-        statusKey: 'settings.pinEnter',
-        onComplete: (code, api) => {
-          if (phase === 'enter') {
-            pending = code;
-            phase = 'confirm';
-            api.reset('settings.pinConfirm');
-            return;
-          }
-          if (code === pending) {
-            state.settings.afkPin = code;
-            save(STORAGE.settings, state.settings);
-            showToast(t('settings.pin'), t('settings.pinSaved'));
-            render();
-          } else {
-            api.shake();
-            pending = '';
-            phase = 'enter';
-            api.setStatus('settings.pinMismatch');
-            setTimeout(() => api.reset('settings.pinEnter'), 500);
-          }
-        },
-      });
-      if (state.settings.afkPin) {
-        const clearPin = el('button', 'btn btn-danger', t('settings.remove'));
-        clearPin.onclick = () => { state.settings.afkPin = ''; save(STORAGE.settings, state.settings); render(); };
-        pin.root.appendChild(clearPin);
-      }
-      pinRow.appendChild(pin.root);
-      panel.appendChild(pinRow);
-    }
+    pinRow.appendChild(pin.root);
+    panel.appendChild(pinRow);
   }
 
 
 
   // data
-  const dataRow = el('div', 'setting-row');
+  const dataRow = el('div', 'setting-row setting-row-stack');
   const dl = el('div', 'setting-label'); dl.appendChild(el('b', '', t('settings.data'))); dl.appendChild(el('span', '', t('settings.dataHint')));
   dataRow.appendChild(dl);
   const dActs = el('div', 'row wrap');
-  const exp = el('button', 'btn', t('settings.export')); exp.onclick = () => {
+  const exp = el('button', 'btn', t('settings.export')); exp.onclick = async () => {
     save(STORAGE.habits, state.habits);
     save(STORAGE.entries, state.entries);
     save(STORAGE.settings, state.settings);
@@ -2085,10 +2356,31 @@ function viewSettings() {
       settings: state.settings,
       goals: state.goals,
     };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const filename = `serene-backup-${todayKey()}.json`;
+    const text = JSON.stringify(payload, null, 2);
+    let mode = 'anchor';
+    try {
+      if (window.serene && window.serene.exportFile) {
+        mode = 'native';
+        const ok = await window.serene.exportFile(filename, text);
+        // #region agent log
+        fetch('http://127.0.0.1:7689/ingest/0528c326-7e6c-4e3b-8ba0-8f4cad278754', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e92032' }, body: JSON.stringify({ sessionId: 'e92032', runId: 'export-fix', hypothesisId: 'export', location: 'app.js:export', message: 'export-native', data: { ok, filename, bytes: text.length }, timestamp: Date.now() }) }).catch(() => {});
+        // #endregion
+        if (ok) {
+          showToast(t('backup.exportedTitle'), t('backup.exportedBody', { habits: posN + negN, days: dayN }));
+          return;
+        }
+      }
+    } catch (e) {
+      mode = 'anchor-fallback';
+    }
+    const blob = new Blob([text], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `serene-backup-${todayKey()}.json`; a.click();
+    const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+    // #region agent log
+    fetch('http://127.0.0.1:7689/ingest/0528c326-7e6c-4e3b-8ba0-8f4cad278754', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e92032' }, body: JSON.stringify({ sessionId: 'e92032', runId: 'export-fix', hypothesisId: 'export', location: 'app.js:export', message: 'export-anchor', data: { mode, filename }, timestamp: Date.now() }) }).catch(() => {});
+    // #endregion
     showToast(t('backup.exportedTitle'), t('backup.exportedBody', { habits: posN + negN, days: dayN }));
   };
   const impFile = document.createElement('input'); impFile.type = 'file'; impFile.accept = 'application/json,.json'; impFile.style.display = 'none';
@@ -2128,7 +2420,7 @@ function viewSettings() {
   panel.appendChild(dataRow);
 
   // UPDATES
-  const uRow = el('div', 'setting-row');
+  const uRow = el('div', 'setting-row setting-row-stack');
   const ul = el('div', 'setting-label');
   ul.appendChild(el('b', '', t('settings.updates')));
   const verSpan = el('span', '', t('settings.updatesHint', {
@@ -2137,8 +2429,8 @@ function viewSettings() {
   }));
   ul.appendChild(verSpan);
   uRow.appendChild(ul);
-  const uActs = el('div', 'row wrap');
-  const urlI = document.createElement('input'); urlI.type = 'text'; urlI.placeholder = t('settings.manifestPlaceholder'); urlI.value = state.settings.updateUrl || ''; urlI.style.minWidth = '260px';
+  const uActs = el('div', 'row wrap setting-actions-full');
+  const urlI = document.createElement('input'); urlI.type = 'text'; urlI.placeholder = t('settings.manifestPlaceholder'); urlI.value = state.settings.updateUrl || ''; urlI.className = 'setting-input-full';
   urlI.onchange = () => { state.settings.updateUrl = urlI.value.trim(); save(STORAGE.settings, state.settings); };
   const check = el('button', 'btn btn-primary', t('settings.checkUpdates'));
   check.onclick = async () => {
@@ -2192,9 +2484,11 @@ function showToast(title, body) {
   }
   const t = document.createElement('div');
   t.className = 'serene-toast';
+  // Android www ships logo.png next to the HTML; hide only if both fail
+  const iconSrc = 'logo.png';
   t.innerHTML = `
     <div class="serene-toast__icon">
-      <img src="../assets/icon.png" alt="" onerror="this.style.display='none'"/>
+      <img src="${iconSrc}" alt="" data-fallback="../assets/icon.png"/>
     </div>
     <div class="serene-toast__body">
       <div class="serene-toast__title"></div>
@@ -2203,6 +2497,28 @@ function showToast(title, body) {
     <button class="serene-toast__close" aria-label="Dismiss">×</button>
     <div class="serene-toast__bar"><span></span></div>
   `;
+  const img = t.querySelector('.serene-toast__icon img');
+  if (img) {
+    img.onerror = () => {
+      const fb = img.getAttribute('data-fallback');
+      if (fb && img.src.indexOf('logo.png') !== -1) {
+        img.onerror = () => {
+          // #region agent log
+          fetch('http://127.0.0.1:7689/ingest/0528c326-7e6c-4e3b-8ba0-8f4cad278754', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e92032' }, body: JSON.stringify({ sessionId: 'e92032', runId: 'bug-batch', hypothesisId: 'toast-icon', location: 'app.js:showToast', message: 'toast-icon-failed', data: { tried: [iconSrc, fb] }, timestamp: Date.now() }) }).catch(() => {});
+          // #endregion
+          img.style.display = 'none';
+        };
+        img.src = fb;
+      } else {
+        img.style.display = 'none';
+      }
+    };
+    img.onload = () => {
+      // #region agent log
+      fetch('http://127.0.0.1:7689/ingest/0528c326-7e6c-4e3b-8ba0-8f4cad278754', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'e92032' }, body: JSON.stringify({ sessionId: 'e92032', runId: 'bug-batch', hypothesisId: 'toast-icon', location: 'app.js:showToast', message: 'toast-icon-ok', data: { src: img.currentSrc || img.src }, timestamp: Date.now() }) }).catch(() => {});
+      // #endregion
+    };
+  }
   t.querySelector('.serene-toast__title').textContent = title || 'Serene';
   t.querySelector('.serene-toast__text').textContent = body || '';
   t.querySelector('.serene-toast__close').addEventListener('click', () => dismiss());
@@ -2247,7 +2563,7 @@ function checkStreakMilestone() {
   const key = 'serene.milestone.' + s;
   if (localStorage.getItem(key)) return;
   localStorage.setItem(key, '1');
-  sendNotification('🔥 ' + s + '-day streak!', "You've checked in " + s + " days in a row on Serene. Beautifully consistent.");
+  sendNotification(s + '-day streak!', "You've checked in " + s + " days in a row on Serene. Beautifully consistent.");
 }
 
 function checkStreakAtRisk() {
@@ -2264,7 +2580,7 @@ function checkStreakAtRisk() {
   const flag = 'serene.atrisk.' + tkey;
   if (localStorage.getItem(flag)) return;
   localStorage.setItem(flag, '1');
-  sendNotification('🔥 Your ' + yStreak + '-day streak', "Don't forget to check in tonight to keep it alive.");
+  sendNotification('Your ' + yStreak + '-day streak', "Don't forget to check in tonight to keep it alive.");
 }
 
 function scheduleNotifications() {

@@ -14,15 +14,6 @@
   <link rel="stylesheet" href="/assets/site.css">
 </head>
 <body class="page-privacy">
-  <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
-    <defs>
-      <filter id="glass-refract" x="-20%" y="-20%" width="140%" height="140%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.009 0.013" numOctaves="2" seed="9" result="noise" />
-        <feDisplacementMap in="SourceGraphic" in2="noise" scale="48" xChannelSelector="R" yChannelSelector="G" />
-      </filter>
-    </defs>
-  </svg>
-
   <div class="ambient" aria-hidden="true">
     <div class="orb orb-a"></div>
     <div class="orb orb-b"></div>
@@ -31,7 +22,7 @@
   <div class="noise" aria-hidden="true"></div>
 
   <header class="site-header">
-    <div class="glass glass--l2 glass--l3 glass-nav">
+    <div class="glass glass--l2 glass-nav">
       <nav class="nav-inner">
         <a class="brand" href="/">
           <span class="brand-mark"><img src="/assets/lotus.svg" alt=""></span>
@@ -45,7 +36,7 @@
     </div>
   </header>
 
-  <article class="doc wrap glass glass--l2 glass--l3 glass-card">
+  <article class="doc wrap glass glass--l2 glass-card">
     <h1>Privacy Policy</h1>
     <p class="meta">Serene · Last updated: 1 August 2026</p>
     <div class="prose">
@@ -61,6 +52,7 @@
       </ul>
       <h2>Permissions</h2>
       <p>On Android, Serene may ask for notification permission so optional reminders can appear. Notifications are scheduled on your device.</p>
+      <p>On Chromebook, Serene runs in Chrome. Mood and habit data stay in this browser's local storage on your device.</p>
       <h2>Internet access</h2>
       <p>The app may use the network only for optional features you enable (for example opening a link you choose). Core tracking works offline.</p>
       <h2>Children</h2>

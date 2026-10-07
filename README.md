@@ -17,9 +17,9 @@ Serene is designed to help you understand yourself better, one day at a time. It
 
 ## Latest Version
 
-**Latest release** — website download always uses the newest GitHub Release zip (`Serene-Windows.zip`)
+**Latest release** — the website offers Windows and Chromebook zips from the newest GitHub Release (with a site mirror for Chromebook).
 
-[📥 Download Latest Release](https://github.com/lode787/serene/releases/latest/download/Serene-Windows.zip)
+[📥 Windows](https://github.com/lode787/serene/releases/latest/download/Serene-Windows.zip) · [📥 Chromebook](https://github.com/lode787/serene/releases/latest/download/Serene-Chromebook.zip)
 
 ## Website
 
@@ -39,16 +39,25 @@ Join our Discord server to connect with other Serene users, share feedback, and 
 
 ## Requirements
 
-- Windows 10 or later
-- x64 processor
+- Windows 10 or later (x64), or a Chromebook with Chrome
+- No account required
 
 ## Installation
 
-1. Download the latest release zip file
+### Windows
+
+1. Download `Serene-Windows.zip`
 2. Extract `SereneSetup.exe`
 3. Run the installer — choose the install folder and whether to add a desktop shortcut
 4. Launch Serene from the Start Menu or desktop shortcut
 5. Optionally lock the app with slide, password, or a 4-digit code in Settings
+
+### Chromebook
+
+1. Download `Serene-Chromebook.zip` (GitHub release or the site mirror)
+2. Unzip the folder in Files
+3. Open `index.html` with Chrome
+4. Optional: install the page as an app from the Chrome menu
 
 ## Files & Folder Structure
 

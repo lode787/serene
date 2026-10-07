@@ -10,7 +10,8 @@
     "start": "electron .",
     "package": "electron-builder --win nsis --x64",
     "zip": "node scripts/make-zip.js",
-    "release": "npm run package && npm run zip"
+    "zip:chromebook": "node scripts/make-chromebook-zip.js",
+    "release": "npm run package && npm run zip && npm run zip:chromebook"
   },
   "build": {
     "appId": "dev.lode787.serene",

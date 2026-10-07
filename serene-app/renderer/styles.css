@@ -73,9 +73,10 @@ body {
   font-weight: 700; font-size: 20px; letter-spacing: 0.3px;
 }
 .brand .brand-logo {
-  width: 32px; height: 32px; border-radius: 9px;
+  width: 32px; height: 32px; border-radius: 50%;
   box-shadow: 0 4px 16px rgba(0,0,0,.35), 0 0 0 1px var(--glass-border);
   object-fit: cover;
+  background: transparent;
 }
 .brand .brand-name { font-weight: 700; }
 .nav-btn {
@@ -93,7 +94,7 @@ body {
   color: var(--fg);
   box-shadow: var(--glass-shadow);
 }
-.nav-btn .ico { font-size: 16px; width: 18px; text-align: center; }
+.nav-btn .ico, .nav-btn .nav-ico { font-size: 16px; width: 18px; height: 18px; text-align: center; flex: 0 0 auto; }
 
 .sidebar-foot { margin-top: auto; font-size: 12px; color: var(--fg-mute); padding: 12px; }
 
@@ -449,6 +450,8 @@ input[type=number]::-webkit-inner-spin-button {
   width: min(560px, 92vw); max-height: 86vh; overflow: auto;
   padding: 26px;
   position: relative;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 .modal h2 { margin: 0 0 14px 0; font-size: 20px; }
 .modal-close { position: absolute; top: 14px; right: 14px; }
@@ -594,7 +597,7 @@ input[type=number]::-webkit-inner-spin-button {
   font-weight: 600;
 }
 
-/* PIN — keyboard only (digit slots, no on-screen keypad) */
+/* PIN — digit slots + on-screen number pad (mobile) */
 .pin-setup, .afk-pin {
   display: flex;
   flex-direction: column;
@@ -603,9 +606,34 @@ input[type=number]::-webkit-inner-spin-button {
   margin-top: 8px;
   outline: none;
   cursor: text;
+  position: relative;
+}
+.pin-hidden-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font-size: 16px;
+  caret-color: transparent;
+  color: transparent;
+  background: transparent;
+  z-index: 2;
+}
+.pin-hidden-input--aside {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  inset: auto;
+  left: -9999px;
 }
 .pin-status { font-size: 13px; text-align: center; }
-.pin-hint { font-size: 12px; text-align: center; max-width: 260px; line-height: 1.4; }
+.pin-hint { font-size: 12px; text-align: center; max-width: 280px; line-height: 1.4; }
 .pin-slots { display: flex; gap: 10px; }
 .pin-slot {
   width: 48px; height: 56px;
@@ -624,6 +652,33 @@ input[type=number]::-webkit-inner-spin-button {
 .pin-slot.active {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent);
+}
+.pin-pad {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(64px, 1fr));
+  gap: 10px;
+  width: min(280px, 100%);
+  margin-top: 6px;
+  z-index: 3;
+}
+.pin-pad-key {
+  min-height: 52px;
+  border-radius: 14px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg-strong);
+  color: var(--fg);
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.pin-pad-key:active {
+  transform: scale(0.97);
+  background: color-mix(in oklab, var(--accent) 18%, var(--glass-bg-strong));
+}
+.pin-pad-key--action {
+  font-size: 18px;
+  opacity: 0.92;
 }
 .shake { animation: serene-shake .28s ease; }
 @keyframes serene-shake {
@@ -877,10 +932,12 @@ body.afk-locked #app { filter: blur(18px) saturate(120%); pointer-events: none; 
 /* Themed in-app notification toasts */
 #serene-toast-host {
   position: fixed;
-  right: 18px;
-  bottom: 18px;
+  right: 12px;
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  left: 12px;
   display: flex;
   flex-direction: column;
+  align-items: flex-end;
   gap: 10px;
   z-index: 99999;
   pointer-events: none;
@@ -888,7 +945,8 @@ body.afk-locked #app { filter: blur(18px) saturate(120%); pointer-events: none; 
 .serene-toast {
   pointer-events: auto;
   position: relative;
-  min-width: 300px;
+  min-width: 0;
+  width: min(380px, 100%);
   max-width: 380px;
   padding: 14px 40px 14px 14px;
   display: grid;
@@ -1016,4 +1074,282 @@ body.afk-locked #app { filter: blur(18px) saturate(120%); pointer-events: none; 
   stroke-linecap: round; stroke-linejoin: round;
   filter: drop-shadow(0 0 6px color-mix(in oklab, var(--accent) 60%, transparent));
   opacity: .95;
+}
+
+/* —— Mobile / Android —— */
+@media (max-width: 820px), (max-height: 820px) {
+  html, body { height: 100%; height: 100dvh; }
+  body { overflow: hidden; }
+
+  #app {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    height: 100%;
+    height: 100dvh;
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .sidebar { display: none !important; }
+
+  .mobile-chrome {
+    grid-row: 1;
+    z-index: 40;
+  }
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: calc(12px + var(--serene-status-pad, 56px)) 14px 12px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px) saturate(160%);
+    border-bottom: 1px solid var(--glass-border);
+  }
+  .brand-compact { padding: 0; gap: 8px; }
+  .brand-compact .brand-logo { width: 28px; height: 28px; border-radius: 8px; }
+  .brand-compact .brand-name { font-size: 17px; }
+
+  .burger-btn {
+    width: 42px; height: 42px;
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    background: var(--glass-bg-strong);
+    display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px;
+    cursor: pointer; padding: 0;
+  }
+  .burger-btn span {
+    display: block; width: 18px; height: 2px;
+    background: var(--fg); border-radius: 2px;
+  }
+
+  .nav-scrim {
+    position: fixed; inset: 0; z-index: 50;
+    background: rgba(5, 8, 18, 0.55);
+    opacity: 0; pointer-events: none;
+    transition: opacity .2s ease;
+  }
+  .nav-scrim.open { opacity: 1; pointer-events: auto; }
+
+  .nav-drawer {
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 60;
+    width: min(300px, 86vw);
+    padding: 18px 14px calc(18px + env(safe-area-inset-bottom, 0px));
+    display: flex; flex-direction: column; gap: 4px;
+    background: color-mix(in oklab, var(--bg-a) 88%, #000);
+    border-right: 1px solid var(--glass-border);
+    backdrop-filter: blur(28px) saturate(160%);
+    transform: translateX(-105%);
+    transition: transform .22s ease;
+    overflow-y: auto;
+  }
+  .nav-drawer.open { transform: translateX(0); }
+  .nav-drawer .brand { padding: 6px 10px 18px; }
+  .nav-drawer .nav-btn {
+    width: 100%;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 12px;
+    min-width: 0;
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+
+  .nav-ico { width: 20px; height: 20px; flex: 0 0 auto; }
+  .sidebar .nav-ico { width: 18px; height: 18px; }
+
+  .content {
+    grid-row: 2;
+    min-height: 0;
+    padding: 16px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+    -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
+  }
+
+  .page-title { font-size: 22px; }
+  .page-head { margin-bottom: 16px; gap: 12px; }
+  .glass { padding: 16px; border-radius: 16px; overflow: visible; }
+  .grid-2 { grid-template-columns: 1fr; gap: 14px; }
+
+  .setting-row,
+  .setting-row-stack {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .setting-label { min-width: 0; width: 100%; }
+  .setting-control {
+    min-width: 0;
+    max-width: none;
+    flex: 1 1 auto;
+    width: 100%;
+  }
+  .chip-group,
+  .chip-group-wrap {
+    flex-wrap: wrap;
+    width: 100%;
+    border-radius: 14px;
+  }
+  .row { flex-wrap: wrap; width: 100%; }
+  .setting-actions-full { width: 100%; }
+  .setting-input-full,
+  input.setting-input-full {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100%;
+    flex: 1 1 100%;
+    box-sizing: border-box;
+  }
+  .glass-select { min-width: 0; width: 100%; max-width: 100%; }
+  .inline-toggle { flex-wrap: wrap; }
+
+  .afk-np { min-width: 0; max-width: 100%; width: 100%; }
+  .afk-card { margin: 16px; max-width: calc(100% - 32px); }
+}
+
+/* Capacitor Android: always use phone chrome (even in landscape) */
+html.is-android,
+body.is-android {
+  height: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  width: 100%;
+}
+html.is-android #app,
+body.is-android #app {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+  max-height: 100%;
+  padding-top: 0;
+  overflow: hidden;
+}
+html.is-android .sidebar,
+body.is-android .sidebar { display: none !important; }
+html.is-android .mobile-chrome,
+body.is-android .mobile-chrome { grid-row: 1; z-index: 40; flex-shrink: 0; }
+html.is-android .topbar,
+body.is-android .topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: calc(12px + var(--serene-status-pad, 56px)) 14px 12px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px) saturate(160%);
+  border-bottom: 1px solid var(--glass-border);
+}
+html.is-android .brand-compact,
+body.is-android .brand-compact { padding: 0; gap: 8px; }
+html.is-android .burger-btn,
+body.is-android .burger-btn {
+  width: 42px; height: 42px;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  background: var(--glass-bg-strong);
+  display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px;
+  cursor: pointer; padding: 0;
+}
+html.is-android .burger-btn span,
+body.is-android .burger-btn span {
+  display: block; width: 18px; height: 2px;
+  background: var(--fg); border-radius: 2px;
+}
+html.is-android .nav-scrim,
+body.is-android .nav-scrim {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(5, 8, 18, 0.55);
+  opacity: 0; pointer-events: none;
+  transition: opacity .2s ease;
+}
+html.is-android .nav-scrim.open,
+body.is-android .nav-scrim.open { opacity: 1; pointer-events: auto; }
+html.is-android .nav-drawer,
+body.is-android .nav-drawer {
+  position: fixed; top: 0; left: 0; bottom: 0; z-index: 60;
+  width: min(300px, 86vw);
+  /* Clear status-bar clock/notch — WebView safe-area is often 0 */
+  padding: max(88px, calc(env(safe-area-inset-top, 0px) + 56px)) 14px calc(18px + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+  display: flex; flex-direction: column; gap: 4px;
+  background: color-mix(in oklab, var(--bg-a) 88%, #000);
+  border-right: 1px solid var(--glass-border);
+  backdrop-filter: blur(28px) saturate(160%);
+  transform: translateX(-105%);
+  transition: transform .22s ease;
+  overflow-y: auto;
+}
+html.is-android .nav-drawer .brand,
+body.is-android .nav-drawer .brand {
+  padding: 4px 10px 18px;
+  flex-shrink: 0;
+}
+html.is-android .nav-drawer.open,
+body.is-android .nav-drawer.open { transform: translateX(0); }
+html.is-android .nav-drawer .nav-btn,
+body.is-android .nav-drawer .nav-btn {
+  width: 100%;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px 14px;
+  font-size: 14px;
+}
+html.is-android .content,
+body.is-android .content {
+  grid-row: 2;
+  min-height: 0;
+  max-height: 100%;
+  height: 100%;
+  padding: 16px 16px calc(32px + env(safe-area-inset-bottom, 0px));
+  overflow-x: hidden;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+}
+html.is-android .setting-row,
+html.is-android .setting-row-stack,
+body.is-android .setting-row,
+body.is-android .setting-row-stack {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+html.is-android .setting-label,
+body.is-android .setting-label { min-width: 0; width: 100%; }
+html.is-android .chip-group,
+html.is-android .chip-group-wrap,
+body.is-android .chip-group,
+body.is-android .chip-group-wrap {
+  flex-wrap: wrap;
+  width: 100%;
+  border-radius: 14px;
+}
+html.is-android .row,
+body.is-android .row { flex-wrap: wrap; width: 100%; }
+html.is-android .setting-input-full,
+html.is-android input.setting-input-full,
+body.is-android .setting-input-full,
+body.is-android input.setting-input-full {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100%;
+  flex: 1 1 100%;
+  box-sizing: border-box;
+}
+html.is-android .glass,
+body.is-android .glass {
+  overflow: visible;
+}
+
+.nav-ico { width: 18px; height: 18px; display: block; }
+
+/* Extra safe-area when running as Capacitor Android shell */
+.is-android .content {
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
 }

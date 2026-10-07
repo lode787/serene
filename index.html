@@ -1,10 +1,26 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark" data-glass-theme="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Serene - A calm, private companion for your mental wellbeing">
+    <meta name="color-scheme" content="light dark">
     <meta name="theme-color" content="#0a0812">
+    <script>
+      (function () {
+        var pref = localStorage.getItem('serene-theme') || 'system';
+        var dark = pref === 'dark' || (pref !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+        var theme = dark ? 'dark' : 'light';
+        var root = document.documentElement;
+        root.setAttribute('data-theme', theme);
+        root.setAttribute('data-glass-theme', theme);
+        var scheme = pref === 'system' ? 'light dark' : theme;
+        var cs = document.querySelector('meta[name="color-scheme"]');
+        var tc = document.querySelector('meta[name="theme-color"]');
+        if (cs) cs.setAttribute('content', scheme);
+        if (tc) tc.setAttribute('content', dark ? '#0a0812' : '#e8eaf8');
+      })();
+    </script>
     <title>Serene - Mental Wellbeing Companion</title>
     <link rel="icon" type="image/x-icon" href="/icons/favicon.ico">
     <link rel="apple-touch-icon" href="/assets/icon-7.png">
@@ -15,34 +31,7 @@
     <link rel="stylesheet" href="/assets/site.css">
 </head>
 <body>
-    <!--# glass filter defs from liquid-glass-css -->
-    <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
-      <defs>
-        <filter id="glass-refract" x="-20%" y="-20%" width="140%" height="140%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.009 0.013" numOctaves="2" seed="9" result="noise" />
-          <feDisplacementMap in="SourceGraphic" in2="noise" scale="48" xChannelSelector="R" yChannelSelector="G" />
-        </filter>
-        <filter id="glass-refract-svg" x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB">
-          <feImage result="map" preserveAspectRatio="none"
-            href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cdefs%3E%3ClinearGradient id='x' x1='0' x2='1' y1='0' y2='0'%3E%3Cstop offset='0%25' stop-color='rgb(0,0,0)'/%3E%3Cstop offset='14%25' stop-color='rgb(128,0,0)'/%3E%3Cstop offset='86%25' stop-color='rgb(128,0,0)'/%3E%3Cstop offset='100%25' stop-color='rgb(255,0,0)'/%3E%3C/linearGradient%3E%3ClinearGradient id='y' x1='0' x2='0' y1='0' y2='1'%3E%3Cstop offset='0%25' stop-color='rgb(0,0,0)'/%3E%3Cstop offset='14%25' stop-color='rgb(0,128,0)'/%3E%3Cstop offset='86%25' stop-color='rgb(0,128,0)'/%3E%3Cstop offset='100%25' stop-color='rgb(0,255,0)'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23x)'/%3E%3Crect width='100%25' height='100%25' fill='url(%23y)' style='mix-blend-mode:screen'/%3E%3C/svg%3E" />
-          <feDisplacementMap in="SourceGraphic" in2="map" scale="22" xChannelSelector="R" yChannelSelector="G" result="disp"/>
-          <feColorMatrix in="disp" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="cr"/>
-          <feOffset in="cr" dx="2.8" dy="0" result="cr2"/>
-          <feColorMatrix in="disp" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="cg"/>
-          <feColorMatrix in="disp" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="cb"/>
-          <feOffset in="cb" dx="-2.8" dy="0" result="cb2"/>
-          <feBlend in="cr2" in2="cg" mode="screen" result="crg"/>
-          <feBlend in="crg" in2="cb2" mode="screen"/>
-        </filter>
-        <filter id="glass-specular" x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur in="SourceAlpha" stdDeviation="5" result="bump"/>
-          <feSpecularLighting in="bump" surfaceScale="12" specularConstant="1.3" specularExponent="18" lighting-color="#ffffff" result="spec">
-            <fePointLight x="120" y="-30" z="120"/>
-          </feSpecularLighting>
-          <feComposite in="spec" in2="SourceAlpha" operator="in"/>
-        </filter>
-      </defs>
-    </svg>
+    <a class="skip-link glass glass--l2 glass-button" href="#content">Skip to content</a>
 
     <div class="ambient" aria-hidden="true">
         <div class="orb orb-a"></div>
@@ -52,16 +41,16 @@
     <div class="noise" aria-hidden="true"></div>
 
     <header class="site-header">
-        <div class="glass glass--l2 glass--l3 glass-nav">
-            <nav class="nav-inner">
+        <div class="glass glass--l2 glass-nav">
+            <nav class="nav-inner" aria-label="Primary">
                 <a class="brand" href="/">
-                    <span class="brand-mark"><img src="/assets/lotus.svg" alt=""></span>
+                    <span class="brand-mark"><img src="/assets/lotus.svg" alt="" width="24" height="24" decoding="async"></span>
                     <span class="brand-name">Serene</span>
                 </a>
-                <button class="nav-toggle glass glass--l2" type="button" id="nav-toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+                <button class="nav-toggle glass glass--l2" type="button" id="nav-toggle" popovertarget="nav-links" popovertargetaction="toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
                 </button>
-                <ul class="nav-links" id="nav-links">
+                <ul class="nav-links" id="nav-links" popover="auto">
                     <li><a href="#features">Features</a></li>
                     <li><a href="#showcase">Screenshots</a></li>
                     <li><a href="#download">Download</a></li>
@@ -71,27 +60,27 @@
         </div>
     </header>
 
-    <main>
+    <main id="content">
         <section class="hero wrap" id="top">
             <div class="hero-grid">
                 <div>
-                    <p class="eyebrow">Private by design</p>
+                    <p class="eyebrow glass glass--l2 glass-badge">Private by design</p>
                     <h1>Your calm space for <span class="grad">mental wellbeing</span></h1>
                     <p class="hero-lead">A gentle companion to track mood and habits — without noise, pressure, or anything leaving your device.</p>
                     <div class="cta-row">
-                        <a class="btn btn-primary glass glass--l2 glass-button glass-button--prominent" id="download-latest" href="https://github.com/lode787/serene/releases/latest/download/Serene-Windows.zip">
-                            <span id="download-latest-label">Download Serene</span>
+                        <a class="btn btn-primary glass glass--l2 glass-button glass-button--prominent" href="#download">
+                            <span>Download Serene</span>
                         </a>
-                        <a class="btn btn-ghost glass glass--l2 glass-button" href="https://discord.gg/S7pPBy7eR" target="_blank" rel="noopener">Join Discord</a>
+                        <a class="btn btn-ghost glass glass--l2 glass-button" href="https://discord.gg/S7pPBy7eR" target="_blank" rel="noopener noreferrer">Join Discord</a>
                     </div>
-                    <p class="hero-meta"><span class="tabular">10,000+</span> downloads · offline &amp; private · Windows</p>
+                    <p class="hero-meta"><span class="tabular">10,000+</span> downloads · offline &amp; private · Windows &amp; Chromebook</p>
                 </div>
 
                 <div class="logo-stage">
                     <div class="logo-aura" aria-hidden="true"></div>
-                    <div class="logo-core glass glass--l2 glass--l3 glass--clear glass--fresnel" id="logo-core" role="button" tabindex="0" aria-label="Toggle theme">
+                    <button class="logo-core glass glass--l2" id="logo-core" type="button" aria-label="Toggle theme">
                         <div class="lotus-spin">
-                            <svg class="lotus-mark" id="lotus-svg" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Serene lotus logo">
+                            <svg class="lotus-mark" id="lotus-svg" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
                                 <defs>
                                     <radialGradient id="petalGrad" gradientUnits="userSpaceOnUse" cx="128" cy="216" r="182">
                                         <stop offset="0%" stop-color="#A9F2FA"/>
@@ -107,7 +96,7 @@
                                 <path class="petal" style="--i:4" fill="url(#petalGrad)" fill-opacity="0.88" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="1" d="M254 156 C220 142 152 152 128 216 C178 227 236 204 254 156 Z"/>
                             </svg>
                         </div>
-                    </div>
+                    </button>
                     <p class="logo-hint">Click to shift the mood</p>
                 </div>
             </div>
@@ -118,7 +107,7 @@
                 <h2>Everything you need to understand yourself</h2>
                 <p>Soft tools for mood, habits, and patterns — designed to stay quiet when you need calm.</p>
             </div>
-            <div class="feature-panel glass glass--l2 glass--l3 glass-card">
+            <div class="feature-panel glass glass--l2 glass-card">
                 <div class="feature-row">
                     <svg class="ic" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
                     <div><h3>Mood Tracking</h3><p>Track your mood on a soft 0–10 scale and watch emotional patterns unfold over time.</p></div>
@@ -133,7 +122,7 @@
                 </div>
                 <div class="feature-row">
                     <svg class="ic" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                    <div><h3>100% Private</h3><p>Nothing is shared. Nothing leaves your computer. Your data lives only on your device.</p></div>
+                    <div><h3>100% Private</h3><p>Nothing is shared. Nothing leaves your device. Your data stays on this Windows PC or Chromebook.</p></div>
                 </div>
                 <div class="feature-row">
                     <svg class="ic" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
@@ -144,8 +133,8 @@
                     <div><h3>Customizable</h3><p>Lock with a gesture or password. Export backups anytime or import to move between machines.</p></div>
                 </div>
             </div>
-            <div class="privacy-strip glass glass--l2 glass--l3 glass-card">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <div class="privacy-strip glass glass--l2 glass-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 Your data stays on this device, always.
             </div>
         </section>
@@ -158,64 +147,90 @@
             <div class="shot-carousel" id="shot-carousel" tabindex="0" aria-label="App screenshots">
                 <div class="shot-track">
                     <figure class="shot-slide">
-                        <div class="shot-frame glass glass--l2 glass--l3 glass-card">
-                            <img src="/assets/screenshot-monthly.png" alt="Monthly overview" loading="lazy" data-full="/assets/screenshot-monthly.png">
-                        </div>
+                        <button type="button" class="shot-frame glass glass--l2 glass-card" data-full="/assets/screenshot-monthly.full.png" aria-label="Expand monthly overview screenshot">
+                            <img src="/assets/screenshot-monthly.png" alt="Monthly overview in Serene" width="1919" height="1000" loading="lazy" decoding="async">
+                        </button>
                         <figcaption>Monthly overview</figcaption>
                     </figure>
                     <figure class="shot-slide">
-                        <div class="shot-frame glass glass--l2 glass--l3 glass-card">
-                            <img src="/assets/screenshot-ambient.png" alt="Ambient view" loading="lazy" data-full="/assets/screenshot-ambient.png">
-                        </div>
+                        <button type="button" class="shot-frame glass glass--l2 glass-card" data-full="/assets/screenshot-ambient.full.png" aria-label="Expand ambient view screenshot">
+                            <img src="/assets/screenshot-ambient.png" alt="Ambient day view in Serene" width="1919" height="1000" loading="lazy" decoding="async" fetchpriority="low">
+                        </button>
                         <figcaption>Ambient view</figcaption>
                     </figure>
                     <figure class="shot-slide">
-                        <div class="shot-frame glass glass--l2 glass--l3 glass-card">
-                            <img src="/assets/screenshot-graphs.png" alt="Graphs" loading="lazy" data-full="/assets/screenshot-graphs.png">
-                        </div>
+                        <button type="button" class="shot-frame glass glass--l2 glass-card" data-full="/assets/screenshot-graphs.full.png" aria-label="Expand graphs screenshot">
+                            <img src="/assets/screenshot-graphs.png" alt="Mood and habit graphs in Serene" width="1919" height="1000" loading="lazy" decoding="async" fetchpriority="low">
+                        </button>
                         <figcaption>Graphs &amp; patterns</figcaption>
                     </figure>
                 </div>
             </div>
-            <div class="shot-dots" id="shot-dots" role="tablist" aria-label="Screenshot slides">
-                <button type="button" class="is-active" aria-label="Show monthly overview" aria-selected="true"></button>
-                <button type="button" aria-label="Show ambient view" aria-selected="false"></button>
-                <button type="button" aria-label="Show graphs" aria-selected="false"></button>
+            <div class="shot-dots" id="shot-dots">
+                <button type="button" class="is-active" aria-current="true" aria-label="Show monthly overview"></button>
+                <button type="button" aria-current="false" aria-label="Show ambient view"></button>
+                <button type="button" aria-current="false" aria-label="Show graphs"></button>
             </div>
         </section>
 
         <section class="section wrap" id="download">
-            <div class="download-block glass glass--l2 glass--l3 glass-card">
+            <div class="download-block glass glass--l2 glass-card">
                 <h2>Start tracking on your own device</h2>
-                <p>Download Serene for Windows. Your mood and habits stay local — always.</p>
+                <p>Choose Windows or Chromebook. Your mood and habits stay local — always.</p>
+                <div class="download-platforms">
+                    <article class="download-card glass glass--l2">
+                        <p class="eyebrow glass glass--l2 glass-badge">Windows</p>
+                        <h3>Windows 10+</h3>
+                        <p>Installer zip for desktop. Extract <code>SereneSetup.exe</code> and run it.</p>
+                        <a class="btn btn-primary glass glass--l2 glass-button glass-button--prominent" id="download-windows" href="https://github.com/lode787/serene/releases/latest/download/Serene-Windows.zip">
+                            <span id="download-windows-label">Download for Windows</span>
+                        </a>
+                        <a class="download-mirror" id="download-windows-mirror" href="https://github.com/lode787/serene/releases/latest">GitHub releases mirror</a>
+                    </article>
+                    <article class="download-card glass glass--l2">
+                        <p class="eyebrow glass glass--l2 glass-badge">Chromebook</p>
+                        <h3>ChromeOS</h3>
+                        <p>Offline web app zip. Unzip, then open <code>index.html</code> in Chrome.</p>
+                        <a class="btn btn-primary glass glass--l2 glass-button glass-button--prominent" id="download-chromebook" href="/downloads/Serene-Chromebook.zip">
+                            <span id="download-chromebook-label">Download for Chromebook</span>
+                        </a>
+                        <a class="download-mirror" id="download-chromebook-mirror" href="/downloads/Serene-Chromebook.zip">Site mirror</a>
+                    </article>
+                </div>
                 <div class="download-actions">
-                    <a class="btn btn-primary glass glass--l2 glass-button glass-button--prominent" id="download-cta" href="https://github.com/lode787/serene/releases/latest/download/Serene-Windows.zip">
-                        <span id="download-cta-label">Download for Windows</span>
-                    </a>
-                    <a class="btn btn-ghost glass glass--l2 glass-button" href="https://discord.gg/S7pPBy7eR" target="_blank" rel="noopener">Join Discord</a>
+                    <a class="btn btn-ghost glass glass--l2 glass-button" href="https://github.com/lode787/serene/releases" target="_blank" rel="noopener noreferrer">All GitHub releases</a>
+                    <a class="btn btn-ghost glass glass--l2 glass-button" href="https://discord.gg/S7pPBy7eR" target="_blank" rel="noopener noreferrer">Join Discord</a>
                 </div>
             </div>
         </section>
     </main>
 
     <footer class="site-footer wrap">
-        <div class="footer-bar">
+        <div class="footer-bar glass glass--l2">
             <p class="footer-copy">&copy; 2026 Serene</p>
             <div class="links">
                 <a href="/privacy.html">Privacy</a>
-                <a href="https://discord.gg/S7pPBy7eR" target="_blank" rel="noopener">Discord</a>
+                <a href="https://github.com/lode787/serene/releases" target="_blank" rel="noopener noreferrer">Releases</a>
+                <a href="https://discord.gg/S7pPBy7eR" target="_blank" rel="noopener noreferrer">Discord</a>
             </div>
         </div>
     </footer>
 
-    <div id="lightbox" class="glass-scrim" role="dialog" aria-modal="true" aria-label="Screenshot preview">
-        <img id="lightbox-img" src="" alt="Screenshot preview">
-    </div>
+    <dialog class="shot-lightbox" id="lightbox" closedby="any" aria-labelledby="lightbox-caption">
+        <form method="dialog">
+            <button type="submit" class="lightbox-close glass glass--l2 glass-button" aria-label="Close preview">&times;</button>
+        </form>
+        <figure class="lightbox-frame glass glass--l2 glass-card">
+            <img id="lightbox-img" alt="">
+            <figcaption id="lightbox-caption"></figcaption>
+        </figure>
+    </dialog>
 
     <script>
         (function () {
             const root = document.documentElement;
-            const meta = document.querySelector('meta[name="theme-color"]');
+            const metaScheme = document.querySelector('meta[name="color-scheme"]');
+            const metaColor = document.querySelector('meta[name="theme-color"]');
             const mq = matchMedia('(prefers-color-scheme: dark)');
             let pref = localStorage.getItem('serene-theme') || 'system';
 
@@ -228,7 +243,8 @@
                 const t = resolved(p);
                 root.setAttribute('data-theme', t);
                 root.setAttribute('data-glass-theme', t);
-                if (meta) meta.setAttribute('content', t === 'dark' ? '#0a0812' : '#e8eaf8');
+                if (metaScheme) metaScheme.setAttribute('content', p === 'system' ? 'light dark' : t);
+                if (metaColor) metaColor.setAttribute('content', t === 'dark' ? '#0a0812' : '#e8eaf8');
             }
 
             apply(pref);
@@ -330,24 +346,51 @@
             setTimeout(bloom, 280);
             if (core) {
                 core.addEventListener('click', toggleTheme);
-                core.addEventListener('keydown', function (e) {
-                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleTheme(); }
-                });
             }
 
             const toggle = document.getElementById('nav-toggle');
             const links = document.getElementById('nav-links');
-            if (toggle && links) {
-                toggle.addEventListener('click', function () {
-                    const open = links.classList.toggle('is-open');
+            const supportsPopover = links && 'popover' in HTMLElement.prototype;
+
+            function setNavOpen(open) {
+                if (toggle) {
                     toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-                });
-                links.querySelectorAll('a').forEach(function (a) {
-                    a.addEventListener('click', function () {
-                        links.classList.remove('is-open');
-                        toggle.setAttribute('aria-expanded', 'false');
+                    toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+                }
+            }
+
+            if (toggle && links) {
+                if (supportsPopover) {
+                    links.addEventListener('toggle', function (e) {
+                        setNavOpen(e.newState === 'open');
                     });
-                });
+                    links.querySelectorAll('a').forEach(function (a) {
+                        a.addEventListener('click', function () {
+                            if (typeof links.hidePopover === 'function') links.hidePopover();
+                        });
+                    });
+                    matchMedia('(max-width: 720px)').addEventListener('change', function (e) {
+                        if (!e.matches && typeof links.hidePopover === 'function') links.hidePopover();
+                    });
+                } else {
+                    toggle.addEventListener('click', function () {
+                        const open = links.classList.toggle('is-open');
+                        setNavOpen(open);
+                    });
+                    links.querySelectorAll('a').forEach(function (a) {
+                        a.addEventListener('click', function () {
+                            links.classList.remove('is-open');
+                            setNavOpen(false);
+                        });
+                    });
+                    document.addEventListener('keydown', function (e) {
+                        if (e.key === 'Escape' && links.classList.contains('is-open')) {
+                            links.classList.remove('is-open');
+                            setNavOpen(false);
+                            toggle.focus();
+                        }
+                    });
+                }
             }
 
             const carousel = document.getElementById('shot-carousel');
@@ -359,7 +402,7 @@
                 dots.forEach(function (dot, i) {
                     const on = i === index;
                     dot.classList.toggle('is-active', on);
-                    dot.setAttribute('aria-selected', on ? 'true' : 'false');
+                    dot.setAttribute('aria-current', on ? 'true' : 'false');
                 });
             }
 
@@ -376,6 +419,12 @@
                 return best;
             }
 
+            function goToSlide(index) {
+                const i = Math.max(0, Math.min(slides.length - 1, index));
+                slides[i].scrollIntoView({ behavior: reduceMotion.matches ? 'auto' : 'smooth', inline: 'center', block: 'nearest' });
+                setActiveSlide(i);
+            }
+
             if (carousel && slides.length) {
                 let scrollTick = null;
                 carousel.addEventListener('scroll', function () {
@@ -386,49 +435,99 @@
                     });
                 }, { passive: true });
                 dots.forEach(function (dot, i) {
-                    dot.addEventListener('click', function () {
-                        slides[i].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-                        setActiveSlide(i);
-                    });
+                    dot.addEventListener('click', function () { goToSlide(i); });
+                });
+                carousel.addEventListener('keydown', function (e) {
+                    if (e.key === 'ArrowRight') { e.preventDefault(); goToSlide(slideIndexFromScroll() + 1); }
+                    if (e.key === 'ArrowLeft') { e.preventDefault(); goToSlide(slideIndexFromScroll() - 1); }
                 });
             }
 
             const lightbox = document.getElementById('lightbox');
             const lightboxImg = document.getElementById('lightbox-img');
-            document.querySelectorAll('.shot-frame img').forEach(function (img) {
-                img.addEventListener('click', function () {
-                    lightboxImg.src = img.dataset.full || img.src;
-                    lightbox.classList.add('active');
-                    document.body.style.overflow = 'hidden';
-                });
-            });
-            function closeLightbox() {
-                lightbox.classList.remove('active');
-                document.body.style.overflow = '';
+            const lightboxCaption = document.getElementById('lightbox-caption');
+
+            function openLightbox(frame) {
+                if (!lightbox || !lightboxImg || !frame) return;
+                var img = frame.querySelector('img');
+                lightboxImg.src = frame.dataset.full || (img && img.src) || '';
+                lightboxImg.alt = (img && img.alt) || 'Screenshot preview';
+                if (lightboxCaption) {
+                    const cap = frame.closest('figure') && frame.closest('figure').querySelector('figcaption');
+                    lightboxCaption.textContent = cap ? cap.textContent : lightboxImg.alt;
+                }
+                lightbox.showModal();
             }
-            lightbox.addEventListener('click', closeLightbox);
-            document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeLightbox(); });
+
+            document.querySelectorAll('.shot-frame').forEach(function (frame) {
+                frame.addEventListener('click', function () { openLightbox(frame); });
+            });
+
+            if (lightbox) {
+                lightbox.addEventListener('close', function () {
+                    lightboxImg.removeAttribute('src');
+                    lightboxImg.alt = '';
+                });
+                if (!('closedBy' in HTMLDialogElement.prototype)) {
+                    lightbox.addEventListener('click', function (event) {
+                        if (event.target !== lightbox) return;
+                        var rect = lightbox.getBoundingClientRect();
+                        var inside = (
+                            rect.top <= event.clientY &&
+                            event.clientY <= rect.top + rect.height &&
+                            rect.left <= event.clientX &&
+                            event.clientX <= rect.left + rect.width
+                        );
+                        if (!inside) lightbox.close();
+                    });
+                }
+            }
 
             (function () {
-                const buttons = [document.getElementById('download-latest'), document.getElementById('download-cta')].filter(Boolean);
-                const labels = [document.getElementById('download-latest-label'), document.getElementById('download-cta-label')].filter(Boolean);
-                if (!buttons.length) return;
-                const fallback = 'https://github.com/lode787/serene/releases/latest/download/Serene-Windows.zip';
-                buttons.forEach(function (b) { b.href = fallback; });
+                const ghLatest = 'https://github.com/lode787/serene/releases/latest';
+                const platforms = [
+                    {
+                        button: document.getElementById('download-windows'),
+                        label: document.getElementById('download-windows-label'),
+                        mirror: document.getElementById('download-windows-mirror'),
+                        fallback: 'https://github.com/lode787/serene/releases/latest/download/Serene-Windows.zip',
+                        mirrorFallback: ghLatest,
+                        exact: 'Serene-Windows.zip',
+                        pattern: /Serene-Windows.*\.zip$/i,
+                        prefix: 'Download for Windows'
+                    },
+                    {
+                        button: document.getElementById('download-chromebook'),
+                        label: document.getElementById('download-chromebook-label'),
+                        mirror: document.getElementById('download-chromebook-mirror'),
+                        fallback: '/downloads/Serene-Chromebook.zip',
+                        mirrorFallback: '/downloads/Serene-Chromebook.zip',
+                        exact: 'Serene-Chromebook.zip',
+                        pattern: /Serene-Chromebook.*\.zip$/i,
+                        prefix: 'Download for Chromebook'
+                    }
+                ].filter(function (p) { return p.button; });
+                if (!platforms.length) return;
+
+                platforms.forEach(function (p) {
+                    p.button.href = p.fallback;
+                    if (p.mirror) p.mirror.href = p.mirrorFallback || p.fallback;
+                });
+
                 fetch('https://api.github.com/repos/lode787/serene/releases/latest')
                     .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
                     .then(function (data) {
                         var assets = Array.isArray(data.assets) ? data.assets : [];
-                        var preferred = assets.find(function (a) { return a && a.name === 'Serene-Windows.zip'; })
-                            || assets.find(function (a) { return a && /Serene-Windows.*\.zip$/i.test(a.name || ''); })
-                            || assets.find(function (a) { return a && /\.zip$/i.test(a.name || ''); });
-                        var href = (preferred && preferred.browser_download_url) || data.html_url || fallback;
-                        buttons.forEach(function (b) { b.href = href; });
-                        if (data.tag_name) {
-                            labels.forEach(function (el, i) {
-                                el.textContent = i === 0 ? ('Download Serene ' + data.tag_name) : ('Download ' + data.tag_name);
-                            });
-                        }
+                        platforms.forEach(function (p) {
+                            var asset = assets.find(function (a) { return a && a.name === p.exact; })
+                                || assets.find(function (a) { return a && p.pattern.test(a.name || ''); });
+                            if (asset && asset.browser_download_url) {
+                                p.button.href = asset.browser_download_url;
+                            }
+                            if (p.label && data.tag_name) {
+                                p.label.textContent = p.prefix + ' ' + data.tag_name;
+                            }
+                        });
                     })
                     .catch(function () {});
             })();

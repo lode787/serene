@@ -27,10 +27,10 @@ if (!fs.existsSync(setupPath)) {
   fs.copyFileSync(found, setupPath);
 }
 
-fs.rmSync(releaseRoot, { recursive: true, force: true });
 fs.mkdirSync(releaseRoot, { recursive: true });
-
-if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath);
+[zipPath, latestZipPath].forEach((p) => {
+  if (fs.existsSync(p)) fs.unlinkSync(p);
+});
 
 const ps = `
 $ErrorActionPreference = 'Stop'

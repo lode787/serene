@@ -29,7 +29,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Windows zip
+      - name: Build Windows and Chromebook zips
         run: npm run release
 
       - name: Publish GitHub Release
@@ -38,6 +38,8 @@ jobs:
           files: |
             serene-app/release/Serene-Windows-v*.zip
             serene-app/release/Serene-Windows.zip
+            serene-app/release/Serene-Chromebook-v*.zip
+            serene-app/release/Serene-Chromebook.zip
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
