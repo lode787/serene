@@ -110,10 +110,17 @@ This zip is the ChromeOS / Chromebook build. It is a self-contained web app
 (not the Windows installer).
 
 Install
-1. Unzip this folder (Files app on your Chromebook).
-2. Open index.html with Chrome (right-click → Open with → Chrome).
+1. Fully extract this zip in the Files app (do not open index.html from
+   inside the .zip). On a Chromebook: select the zip → ⋮ → Extract, or
+   two-finger tap → Extract. Alt + click also works as a right-click.
+2. Open the extracted folder, then open index.html with Chrome.
 3. Optional: Chrome menu → Cast, save, and share → Install page as app
    (or "Install Serene") so it opens like a normal app.
+
+If Files shows an error opening the zip, or Chrome opens a blank white
+page, the zip was not extracted first — or you still have an older build
+with Windows-style paths. Download Serene-Chromebook.zip again from the
+website and extract into a normal folder before opening index.html.
 
 Offline
 Once opened (or installed), mood and habit data stay in this browser on
@@ -166,22 +173,65 @@ fs.writeFileSync(indexPath, html, 'utf8');
 });
 fs.mkdirSync(path.dirname(siteMirror), { recursive: true });
 
-const zipTarget = zipPath.replace(/'/g, "''");
-const stageTarget = stageDir.replace(/'/g, "''");
-const ps = `
-$ErrorActionPreference = 'Stop'
-Compress-Archive -Path '${stageTarget}' -DestinationPath '${zipTarget}' -Force
+/**
+ * ChromeOS Files cannot mount zips whose entries use Windows backslashes
+ * (PowerShell Compress-Archive). Always write POSIX forward-slash paths.
+ */
+function createPosixZip(folderPath, outZipPath) {
+  const parent = path.dirname(folderPath);
+  const base = path.basename(folderPath);
+  const script = `
+import os, sys, zipfile
+parent, base, out = sys.argv[1], sys.argv[2], sys.argv[3]
+root = os.path.join(parent, base)
+with zipfile.ZipFile(out, 'w', compression=zipfile.ZIP_DEFLATED) as zf:
+    for dirpath, _dirnames, filenames in os.walk(root):
+        for name in filenames:
+            full = os.path.join(dirpath, name)
+            rel = os.path.relpath(full, parent).replace(os.sep, '/')
+            zf.write(full, rel)
 `;
+  const pyCandidates = process.platform === 'win32'
+    ? ['python', 'python3', 'py']
+    : ['python3', 'python'];
+  let lastErr = null;
+  for (const bin of pyCandidates) {
+    const args = bin === 'py'
+      ? ['-3', '-c', script, parent, base, outZipPath]
+      : ['-c', script, parent, base, outZipPath];
+    const result = spawnSync(bin, args, { stdio: 'inherit', windowsHide: true });
+    if (result.error) {
+      lastErr = result.error;
+      continue;
+    }
+    if (result.status === 0) return;
+    lastErr = new Error(`${bin} exited with ${result.status}`);
+  }
+  console.error('Failed to create Chromebook zip with Python.', lastErr || '');
+  process.exit(1);
+}
 
-const result = spawnSync(
-  'powershell.exe',
-  ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', ps],
-  { stdio: 'inherit', windowsHide: true }
-);
+createPosixZip(stageDir, zipPath);
 
-if (result.status !== 0) {
-  console.error('Failed to create Chromebook zip.');
-  process.exit(result.status || 1);
+{
+  const checkScript = 'import zipfile,sys; z=zipfile.ZipFile(sys.argv[1]); names=z.namelist(); print("\\n".join(names[:5])); sys.exit(2 if any("\\\\" in n for n in names) else 0)';
+  const checkers = process.platform === 'win32' ? ['python', 'python3', 'py'] : ['python3', 'python'];
+  let checked = false;
+  for (const bin of checkers) {
+    const args = bin === 'py' ? ['-3', '-c', checkScript, zipPath] : ['-c', checkScript, zipPath];
+    const zipCheck = spawnSync(bin, args, { encoding: 'utf8' });
+    if (zipCheck.error) continue;
+    if (zipCheck.stdout) process.stdout.write(zipCheck.stdout + (zipCheck.stdout.endsWith('\n') ? '' : '\n'));
+    if (zipCheck.status === 2) {
+      console.error('Chromebook zip still contains backslash paths; aborting.');
+      process.exit(1);
+    }
+    if (zipCheck.status === 0) {
+      checked = true;
+      break;
+    }
+  }
+  if (!checked) console.warn('Could not verify zip entry paths (Python check skipped).');
 }
 
 fs.copyFileSync(zipPath, latestZipPath);
